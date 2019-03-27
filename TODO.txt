@@ -16,3 +16,6 @@ Responsibilities
 Tyler: Modularize Instruction Fetch, Reg Read, Reg Write, and handle pc changes
 Jarren: Modularize ALU/Mem ALU2. Lead on Implementors Notes
 Evan: Stalling, Halting, Handling flow dependencies
+
+Example of pipelined processor from previous years:
+http://aggregate.org/EE480/pipepinky.html
