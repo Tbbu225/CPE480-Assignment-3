@@ -1,5 +1,5 @@
-TACKY Testing Code:
-//cf8, cvt, jr, lf, pre, and sys will not be tested
+;TACKY Testing Code:
+;cf8, cvt, jr, lf, pre, and sys will not be tested
 
 ;Tests ci8, jnz8, jz8, a2r, r2a, li, st
 Test0:		ci8 $r0, 0xFF
@@ -131,7 +131,7 @@ ci8 $r2, 0xfe		;r2 = 0xfe
 pre 0x00
 ci8 $r1, 0x01		;r1 = 0x0001
 		not $r2, r2a $1		;r0 = !r2 = 0x01
-		sub $r1, r2a $1	r0 = r0-r1 = 0x01-0x01 = should be 0x00
+		sub $r1, r2a $1	        ;r0 = r0-r1 = 0x01-0x01 = should be 0x00
 jz8 $r0, Passed6	;Pass if r0 = 0x00
 sys 0x00		;Failed!
 
