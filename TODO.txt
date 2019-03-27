@@ -1,0 +1,12 @@
+Splitting of alu. Divide -> reciprocal lookup + multiply
+Modularize and add registers that send values to the next stage of the pipe
+Detecting and stopping due to flow dependencies. We’ll need to stop pc and instruction executions. Remember to consider the pre register
+Halt must occur after instructions before it, but not after instructions after it (ie data memory) ‘halt countdown’ – after halt is read, insert nops after it, and stop in 3? clock cycles
+
+Stages of the pipeline
+----------------------
+Instruction Fetch
+Register Read
+Alu / Memory
+Alu Stage 2
+Register Write
