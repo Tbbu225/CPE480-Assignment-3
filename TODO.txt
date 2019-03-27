@@ -10,3 +10,9 @@ Register Read
 Alu / Memory
 Alu Stage 2
 Register Write
+
+Responsibilities
+-----------------------
+Tyler: Modularize Instruction Fetch, Reg Read, Reg Write, and handle pc changes
+Jarren: Modularize ALU/Mem ALU2. Lead on Implementors Notes
+Evan: Stalling, Halting, Handling flow dependencies
