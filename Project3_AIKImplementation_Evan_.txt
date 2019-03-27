@@ -1,4 +1,4 @@
-AIK Implementation
+;AIK Implementation
 ;Define the registers.
 .const {r0  r1  r2  r3  r4  ra  rv  sp}
 ;Define format for pre, jp8, and sys.
