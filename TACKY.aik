@@ -1,0 +1,27 @@
+; Packable register operations
+.rop $.r0, .rop $.r1 := .this:5 .r0:3 .rop:5 .r1:3
+.alias .rop { 0x00 a2r r2a add and cvt div mul not or sh slt sub xor
+              0x10 jr lf li st }
+
+; Register and 8-bit immediate
+.ri8op $.r,.i8 := .this:5 .r:3 .i8:8
+.alias .ri8op 0x18 cf8 ci8 jnz8 jz8
+
+; 8-bit immediate
+.i8op .i8 := .this:5 0:3 .i8:8
+.alias .i8op 0x1c jp8 pre sys
+
+; Macros
+cf $.r,.i16 := pre:5 0:3 (.i16>>8):8 cf8:5 .r:3 .i16:8
+ci $.r,.i16 := pre:5 0:3 (.i16>>8):8 ci8:5 .r:3 .i16:8
+jnz $.r,.i16 := pre:5 0:3 (.i16>>8):8 jnz8:5 .r:3 .i16:8
+jp .i16 := pre:5 0:3 (.i16>>8):8 jp8:5 0:3 .i16:8
+jz $.r,.i16 := pre:5 0:3 (.i16>>8):8 jz8:5 .r:3 .i16:8
+
+; Pre-defined register names
+.const r0 r1 r2 r3 r4 ra rv sp
+
+; Segment defs, Harvard model (defaults were ok too)
+.segment .text 16 0x10000 0 .VMEM
+.segment .data 16 0x10000 0 .VMEM
+
