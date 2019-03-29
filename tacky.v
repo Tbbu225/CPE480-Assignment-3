@@ -1,7 +1,8 @@
 // basic sizes of things
 `define WORD        [15:0]
-`define OPcode1 [15:11]
-`define OPcode2 [7:3]
+`define HALFWORD    [7:0]
+`define OPcode1     [15:11]
+`define OPcode2     [7:3]
 `define REG1        [10:8]
 `define REG2        [2:0]
 `define IMM8        [7:0]
@@ -251,5 +252,74 @@ end
 endmodule
 
 module tacky_processor(halt, reset, clk);
+
+//stage 0 regs & memory
+reg `WORD next_pc, pc, pc_inc, instruction;
+reg `WORD instruction_mem `MEMSIZE;
+
+//stage 1 regs
+reg `TYPEDREG regfile `REGSIZE;
+reg `HALFWORD pre;
+reg `WORD imm_to_ALUMEM;
+reg `TYPEDREG acc0_val, acc1_val, r1_val, r2_val;
+reg `STATE op1_to_ALUMEM, op2_to_ALUMEM;
+
+//stage 2 regs & memory
+reg `WORD data_mem `MEMSIZE;
+reg `STATE op1_to_ALU2, op2_to_ALU2;
+
+//stage 3 regs
+reg `STATE op1_to_WB, op2_to_WB;
+
+//stage 4 regs
+reg ALU1_result;
+reg `WORD pc_next;
+
+
+always@(posedge reset) begin
+    $readmemh0(regfile);
+    $readmemh1(instruction_mem);
+    $readmemh2(data_mem);
+end
+
+//stage 0: instruction fetch
+
+
+always@(posedge clk) begin
+    pc <= next_pc;
+    instruction <= instruction[pc]
+    pc_inc <= pc_inc + 1;
+end
+
+//stage 1: register read
+always@(posedge clk) begin
+    if(instruction `Opcode1 == `OPpre) pre <= instruction `IMM8;
+    imm_to_ALUMEM <= {pre, instruction `IMM8};
+    acc0_val <= regfile[0];
+    acc1_val <= regfile[1];
+    r1_val <= regfile`REG1;
+    r2_val <= regfile`REG2;
+    op1_to_ALUMEM <= instruction `Opcode1;
+    op2_to_ALUMEM <= instruction `Opcode2;
+end
+
+//stage 2: ALU/MEM
+always@(posedge clk) begin
+
+
+    op1_to_ALU2 <= op1_to_ALUMEM;
+    op1_to_ALU2 <= op2_to_ALUMEM;
+end
+//stage 3: ALU2
+always@(posedge clk) begin
+
+
+    op1_to_WB <= op1_to_ALU2;
+    op2_to_WB <- op2_to_ALU2;
+end
+//stage 4: writeback
+always@(posedge clk) begin
+
+end
 
 endmodule
