@@ -274,6 +274,7 @@ reg `STATE op1_to_WB, op2_to_WB;
 //stage 4 regs
 reg ALU1_result;
 reg `WORD pc_next;
+reg `TYPEDREG 
 
 
 always@(posedge reset) begin
