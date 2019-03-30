@@ -178,78 +178,203 @@ assign ui = {1'b1, f `FFRAC, 16'b0} >> ((128+22) - f `FEXP);
 assign i = (tiny ? 0 : (big ? 32767 : (f `FSIGN ? (-ui) : ui)));
 endmodule
 
-//ALU MODULE
-module ALUmod(out, in1, in2, op, type);
-input [4:0] op;
-input type; //0->integer arithmetic, 1->floating point arithmetic
-//$acc should always be in1 and $r should be in2.
-input signed `WORD in1, in2;
-output reg `TYPEDREG out;
-wire signed `WORD recr, addr, subr, shr, divr, mulr, sltr;
-wire signed `WORD outand, outor, outnot, outxor, outslt;
-//Assign the bitwise operations.
-assign outand = in1 & in2;
-assign outor = in1 | in2;
-assign outxor = in1 ^ in2;
-assign outnot = ~in2;
-assign outslt = in1 < in2;
-//Instantiate the floating point modules.
-fadd fa(addr, in1, in2);
-//Use fadd with the negated version of in2.
-//Negate by flipping the top bit of the float.
-fadd fsu(subr, in1, {~in2[15], in2[14:0]});
-fmul fm(mulr, in1, in2);
-frecip fr(recr, in2);
-fmul fd(divr, in1, recr);
-fshift fs(shr, in1, in2);
-fslt fsl(sltr, in1, in2);
-always @(*) begin
- case(op)
-   `OPadd: begin
-           case(type)
-           0: begin out <= in1 + in2; end
-           1: begin out <= {type,addr}; end
-           endcase
-           end
-   `OPsub: begin
-           case(type)
-           0: begin out <= in1 - in2; end
-           1: begin out <= {type,subr}; end
-           endcase
-           end
-   `OPmul: begin
-           case(type)
-           0: begin out <= in1 * in2; end
-           1: begin out <= {type,mulr}; end
-           endcase
-           end
-   `OPdiv: begin
-           case(type)
-           0: begin out <= in1 / in2; end
-           1: begin out <= {type,divr}; end
-           endcase
-           end
-   `OPand: begin out <= {type,outand}; end
-   `OPor:  begin out <= {type,outor}; end
-   `OPxor: begin out <= {type,outxor}; end
-   `OPnot: begin out <= {type,outnot}; end
-   //Positive indicates left shift.
-   `OPsh:  begin
-           case(type)
-           0:  begin out <= in1 << in2; end
-           1:  begin out <= {type,shr}; end
-           endcase
-           end
-   `OPslt: begin
-           case(type)
-           0:  begin out = outslt; end
-           1:  begin out <= {type,sltr}; end
-           endcase
-           end
-   default: out <= 16'b0;
- endcase
-end
+
+// ALU0 - First phase of the ALU
+// Outputs
+//	 	outVal is the output of the first phase alu
+// 		out1 is the value of the first register used in the instruction.
+// 		out2 is the value of the second register used in the isntruction.
+// 		oreg1 is the first register used in the alu
+// 		oreg2 is the second register used in the alu
+// 		oop is the opcode of the instruction
+//		otyp is the type of the numbers
+// Inputs
+// 		in1 is the value of the first register used in the instruction.
+// 		in2 is the value of the second register used in the isntruction.
+// 		ireg1 is the first register used in the alu.
+// 		ireg2 is the second register used in the alu.
+// 		iop is the opcode of the instruction.
+// 		typ is the type of number used in the operation.
+module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2, iop, typ, stall);
+	input [4:0] iop;
+	input typ; //0->integer arithmetic, 1->floating point arithmetic
+	//$acc should always be in1 and $r should be in2.
+	input signed `WORD in1, in2;
+	input reg `REGID ireg1, ireg2;
+	output signed `WORD out1, out2;
+	output reg `TYPEDREG outVal;
+	output reg `REGID oreg1, oreg2;	
+	output [4:0] oop;
+	output otyp;
+	
+	reg [4:0] lastOp;
+	reg lastType;
+	reg signed `WORD lastIn1, lastIn2;
+	reg `REGID lastReg1, lastReg2;
+	reg `TYPEDREG lastVal;
+	
+	assign oop = lastOp;
+	assign oreg1 = lastReg1;
+	assign oreg2 = lastReg2;
+	assign out1 = lastIn1;
+	assign out2 = lastIn2;
+	assign otyp = lastType;
+	assign outVal = lastVal;
+	
+	wire signed `WORD recr, addr, subr, shr, mulr, sltr;
+	wire signed `WORD outand, outor, outnot, outxor, outslt;
+	wire signed `WORD cvti, cvtf;
+
+	//Assign the bitwise operations.
+	assign outand = in1 & in2;
+	assign outor = in1 | in2;
+	assign outxor = in1 ^ in2;
+	assign outnot = ~in2;
+	assign outslt = in1 < in2;
+	//Instantiate the floating point modules.
+	fadd fa(addr, in1, in2);
+	//Use fadd with the negated version of in2.
+	//Negate by flipping the top bit of the float.
+	fadd fsu(subr, in1, {~in2[15], in2[14:0]});
+	fmul fm(mulr, in1, in2);
+	frecip fr(recr, in2);
+	fshift fs(shr, in1, in2);
+	fslt fsl(sltr, in1, in2);
+	i2f icvt(cvti, in2);
+	f2i fcvt(cvtf, in2);
+	always @(posedge clk) begin #1
+		if (!stall) begin
+			case(iop)
+				`OPadd: begin
+					case(typ)
+						0: begin lastVal <= {typ, in1 + in2}; end
+						1: begin lastVal <= {typ, addr}; end
+					endcase
+				end
+				`OPsub: begin
+					case(typ)
+						0: begin lastVal <= {typ, in1 - in2}; end
+						1: begin lastVal <= {typ, subr}; end
+					endcase
+				end
+				`OPmul: begin
+					case(typ)
+						0: begin lastVal <= {typ, in1 * in2}; end
+						1: begin lastVal <= {typ, mulr}; end
+					endcase
+				end
+				`OPdiv: begin
+					case(typ)
+						0: begin lastVal <= {typ, in1 / in2;} end
+						1: begin lastVal <= {typ, recr}; end // Only perform the first half of the fp division here.
+					endcase
+				end
+				`OPand: begin lastVal <= {typ, outand}; end
+				`OPor:  begin lastVal <= {typ, outor}; end
+				`OPxor: begin lastVal <= {typ, outxor}; end
+				`OPnot: begin lastVal <= {typ, outnot}; end
+			//Positive indicates left shift.
+				`OPsh:  begin
+					case(typ)
+						0:  begin lastVal <= {typ, in1 << in2}; end
+						1:  begin lastVal <= {typ, shr}; end
+					endcase
+				end
+				`OPslt: begin
+					case(typ)
+						0:  begin lastVal <= {typ, outslt}; end
+						1:  begin lastVal <= {typ, sltr}; end
+					endcase
+				end
+				`OPcvt: begin
+					case(typ)
+						0:  begin lastVal <= {!typ, cvti}; end
+						1:  begin lastVal <= {!typ, cvtf}; end
+					endcase
+				end			
+				default: lastVal <= 16'b0;
+			endcase
+			
+			lastOp <= iop;
+			lastReg1 <= ireg1;
+			lastReg2 <= ireg2;
+			lastIn1 <= in1;
+			lastIn2 <= in2;
+			lastType <= typ;
+		end
+	end
 endmodule
+
+// ALU1 - second phase of the ALU
+// Outputs
+//	 	outVal is the output of the second phase alu
+// 		out1 is the value of the first register used in the instruction.
+// 		out2 is the value of the second register used in the isntruction.
+// 		oreg1 is the first register used in the alu
+// 		oreg2 is the second register used in the alu
+// 		oop is the opcode of the instruction
+//		otyp is the type of the numbers
+// Inputs
+// 		inVal is the value received from ALU part 1.
+// 		in1 is the value of the first register used in the instruction.
+// 		in2 is the value of the second register used in the isntruction.
+// 		ireg1 is the first register used in the alu.
+// 		ireg2 is the second register used in the alu.
+// 		iop is the opcode of the instruction.
+// 		typ is the type of number used in the operation.
+module ALU1(outVal, out1, out2, oreg1, oreg2, oop, otyp, inVal, in1, in2, ireg1, ireg2, iop, typ, stall);
+	input [4:0] iop;
+	input typ; //0->integer arithmetic, 1->floating point arithmetic
+	//$acc should always be in1 and $r should be in2.
+	input signed `WORD in1, in2;
+	input reg `REGID ireg1, ireg2;
+	input reg `TYPEDREG inVal;
+	output signed `WORD out1, out2;
+	output reg `TYPEDREG outVal;
+	output reg `REGID oreg1, oreg2;	
+	output [4:0] oop;
+	output otyp;
+	
+	reg [4:0] lastOp;
+	reg lastType;
+	reg signed `WORD lastIn1, lastIn2;
+	reg `REGID lastReg1, lastReg2;
+	reg `TYPEDREG lastVal;
+	
+	assign oop = lastOp;
+	assign oreg1 = lastReg1;
+	assign oreg2 = lastReg2;
+	assign out1 = lastIn1;
+	assign out2 = lastIn2;
+	assign otyp = lastType;
+	assign outVal = lastVal;
+	
+	wire signed `WORD divr;
+
+	fmul fd(divr, in1, inVal);
+	
+	always @(posedge clk) begin #1
+		if (!stall) begin
+			case(iop)
+				`OPdiv: begin
+					case(typ)
+						0: begin lastVal <= inVal; end
+						1: begin lastVal <= {typ, divr}; end
+					endcase
+				end
+				default: outVal <= inVal;
+			endcase
+			
+			lastOp <= iop;
+			lastReg1 <= ireg1;
+			lastReg2 <= ireg2;
+			lastIn1 <= in1;
+			lastIn2 <= in2;
+			lastType <= typ;
+		end
+	end
+endmodule
+
 
 module tacky_processor(halt, reset, clk);
 
