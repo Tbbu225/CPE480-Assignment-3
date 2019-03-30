@@ -28,7 +28,6 @@
 `define OPlf        5'b01111
 `define OPli        5'b01110
 `define OPst        5'b01010
-`define OPcvt       5'b01011
 `define OPjr        5'b01001
 `define OPadd       5'b11000
 `define OPsub       5'b11001
@@ -40,6 +39,7 @@
 `define OPnot       5'b11100
 `define OPsh        5'b10100
 `define OPslt       5'b10101
+`define OPcvt       5'b10111
 
 
 //state numbers only
