@@ -262,19 +262,18 @@ reg `TYPEDREG regfile `REGSIZE;
 reg `HALFWORD pre;
 reg `WORD imm_to_ALUMEM;
 reg `TYPEDREG acc0_val, acc1_val, r1_val, r2_val;
-reg `STATE op1_to_ALUMEM, op2_to_ALUMEM;
+reg `Word ins_to_ALUMEM;
 
 //stage 2 regs & memory
 reg `WORD data_mem `MEMSIZE;
-reg `STATE op1_to_ALU2, op2_to_ALU2;
+reg `WORD ins_to_ALU2;
 
 //stage 3 regs
-reg `STATE op1_to_WB, op2_to_WB;
+reg `WORD ins_to_WB;
 
 //stage 4 regs
-reg ALU1_result;
+reg `TYPEDREG ALU1_result;
 reg `WORD pc_next;
-reg `TYPEDREG 
 
 
 always@(posedge reset) begin
@@ -300,26 +299,24 @@ always@(posedge clk) begin
     acc1_val <= regfile[1];
     r1_val <= regfile`REG1;
     r2_val <= regfile`REG2;
-    op1_to_ALUMEM <= instruction `Opcode1;
-    op2_to_ALUMEM <= instruction `Opcode2;
+    ins_to_ALUMEM <= instruction;
 end
 
 //stage 2: ALU/MEM
 always@(posedge clk) begin
 
-
-    op1_to_ALU2 <= op1_to_ALUMEM;
-    op1_to_ALU2 <= op2_to_ALUMEM;
+    ins_to_ALU2 <= ins_to_ALUMEM;
 end
 //stage 3: ALU2
 always@(posedge clk) begin
 
-
-    op1_to_WB <= op1_to_ALU2;
-    op2_to_WB <- op2_to_ALU2;
+    ins_to_WB <= ins_to_ALU2;
 end
+
 //stage 4: writeback
 always@(posedge clk) begin
+    
+    
 
 end
 
