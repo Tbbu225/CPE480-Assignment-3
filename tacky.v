@@ -12,9 +12,6 @@
 `define MEMSIZE     [65535:0]
 `define REGNUM      [2:0]
 
-
-
-
 // opcode values, also state numbers
 `define OPno        5'b00000
 `define OPpre       5'b00001
@@ -42,21 +39,23 @@
 `define OPslt       5'b10101
 `define OPcvt       5'b10111
 
-
 //state numbers only
 `define Start       5'b01000
 `define Start1      5'b10000
 `define Start2      5'b10001
 
-
 //Module stuff
 `define ALU     	5'b1xxxx
 
 //Accumulator values
-`define acc0        3'b000
-`define acc1        3'b001
+`define Acc0        3'b000
+`define Acc1        3'b001
 
-//boolean values
+//Type values
+`define Int         1'b0
+`define Float       1'b1
+
+//Boolean values
 `define true        1'b1
 `define false       1'b0
 
@@ -209,17 +208,17 @@ module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2,
 	input typ; //0->integer arithmetic, 1->floating point arithmetic
 	//$acc should always be in1 and $r should be in2.
 	input signed `WORD in1, in2;
-	input reg `REGID ireg1, ireg2;
+	input reg `REGNUM ireg1, ireg2;
 	output signed `WORD out1, out2;
 	output reg `TYPEDREG outVal;
-	output reg `REGID oreg1, oreg2;	
+	output reg `REGNUM oreg1, oreg2;	
 	output [4:0] oop;
 	output otyp;
 	
 	reg [4:0] lastOp;
 	reg lastType;
 	reg signed `WORD lastIn1, lastIn2;
-	reg `REGID lastReg1, lastReg2;
+	reg `REGNUM lastReg1, lastReg2;
 	reg `TYPEDREG lastVal;
 	
 	assign oop = lastOp;
@@ -336,18 +335,18 @@ module ALU1(outVal, out1, out2, oreg1, oreg2, oop, otyp, inVal, in1, in2, ireg1,
 	input typ; //0->integer arithmetic, 1->floating point arithmetic
 	//$acc should always be in1 and $r should be in2.
 	input signed `WORD in1, in2;
-	input reg `REGID ireg1, ireg2;
+	input reg `REGNUM ireg1, ireg2;
 	input reg `TYPEDREG inVal;
 	output signed `WORD out1, out2;
 	output reg `TYPEDREG outVal;
-	output reg `REGID oreg1, oreg2;	
+	output reg `REGNUM oreg1, oreg2;	
 	output [4:0] oop;
 	output otyp;
 	
 	reg [4:0] lastOp;
 	reg lastType;
 	reg signed `WORD lastIn1, lastIn2;
-	reg `REGID lastReg1, lastReg2;
+	reg `REGNUM lastReg1, lastReg2;
 	reg `TYPEDREG lastVal;
 	
 	assign oop = lastOp;
@@ -394,18 +393,17 @@ reg `WORD instruction_mem `MEMSIZE;
 //stage 1 regs
 reg `TYPEDREG regfile `REGSIZE;
 reg `HALFWORD pre;
-reg `WORD imm_to_ALUMEM;
-reg `TYPEDREG acc0_val, acc1_val, r1_val, r2_val;
-reg `Word ins_to_ALUMEM;
+reg `TYPEDREG acc0_val, acc1_val, r1_val, r2_val, imm_to_ALUMEM;
+reg `WORD ins_to_ALUMEM;
 
 //stage 2 regs & memory
 reg `WORD data_mem `MEMSIZE;
 reg `WORD ins_to_ALU2;
-reg `TYPEDREG data1_to_ALU2, data2_to_ALU2;
+reg `TYPEDREG data1_to_ALU2, data2_to_ALU2, imm_to_ALU2;
 
 //stage 3 regs
 reg `WORD ins_to_WB;
-reg `TYPEDREG data1_to_WB, data2_to_WB;
+reg `TYPEDREG data1_to_WB, data2_to_WB, imm_to_WB;
 reg `TYPEDREG ALU1_result, ALU2_result;
 
 //stage 4 regs
@@ -424,14 +422,15 @@ end
 //stage 0: instruction fetch
 always@(posedge clk) begin
     pc <= next_pc;
-    instruction <= instruction[pc]
+    instruction <= instruction[pc];
     pc_inc <= (jump_flag) ? pc_next : pc_inc + 1;
 end
 
 //stage 1: register read
 always@(posedge clk) begin
-    if(instruction `Opcode1 == `OPpre) pre <= instruction `IMM8;
-    imm_to_ALUMEM <= {pre, instruction `IMM8};
+    if(instruction `OPcode1 == `OPpre) pre <= instruction `IMM8;
+    if(instruction `OPcode1 == `OPcf8) imm_to_ALUMEM <= {`Float, pre, instruction `IMM8};
+    if(instruction `OPcode1 == `OPci8) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
     acc0_val <= regfile[0];
     acc1_val <= regfile[1];
     r1_val <= regfile`REG1;
@@ -443,11 +442,15 @@ end
 always@(posedge clk) begin
 
     ins_to_ALU2 <= ins_to_ALUMEM;
+    imm_to_ALU2 <= imm_to_ALUMEM;
+    //data1_to_ALU2 <= ;
+    //data2_to_ALU2 <= ;
 end
 //stage 3: ALU2
 always@(posedge clk) begin
 
     ins_to_WB <= ins_to_ALU2;
+    imm_to_WB <= imm_to_ALU2;
     data1_to_WB <= data1_to_ALU2;
     data2_to_WB <= data2_to_ALU2;
 end
@@ -461,39 +464,43 @@ always@(posedge clk) begin
     //reg2_load <= ins_to_WB `REG2
     
     //First instruction logic WB
-    if(ins_to_WB `Opcode1 >= `OPsh || ins_to_WB `Opcode1 == `OPr2a) begin
-        reg1_load <= `acc0;
+    if(ins_to_WB `OPcode1 >= `OPsh || ins_to_WB `OPcode1 == `OPr2a) begin
+        reg1_load <= `Acc0;
         reg1_val  <= ALU1_result;
         reg1_flag <= `true;
     end
-    else if (ins_to_WB `Opcode1 == `OPlf || ins_to_WB `Opcode1 == `OPli) begin
+    else if (ins_to_WB `OPcode1 == `OPlf || ins_to_WB `OPcode1 == `OPli) begin
         reg1_load <= ins_to_WB `REG1;
-        reg1_val  <= data_to_WB;
+        reg1_val  <= data1_to_WB;
         reg1_flag <= `true;
     end
-    else if (ins_to_WB `Opcode1 == `OPa2r) begin
+    else if (ins_to_WB `OPcode1 == `OPa2r) begin
         reg1_load <= ins_to_WB `REG1;
         reg1_val  <= ALU1_result;
+        reg1_flag <= `true;
+    end
+    else if(ins_to_WB `OPcode1 == `OPcf8 || ins_to_WB `OPcode1 == `OPci8) begin
+        reg1_load <= ins_to_WB `REG1;
+        reg1_val  <= imm_to_WB;
         reg1_flag <= `true;
     end
     else begin
         reg1_flag <= `false;
-        reg2_flag <= `false;
     end
     
     //Second instruction logic WB (if present)
-    if(ins_to_WB `Opcode1 >= `OPjr)  begin
-        if(ins_to_WB `Opcode2 >= `OPsh || ins_to_WB `Opcode2== `OPr2a) begin
-            reg2_load <= `acc1;
+    if(ins_to_WB `OPcode1 >= `OPjr)  begin
+        if(ins_to_WB `OPcode2 >= `OPsh || ins_to_WB `OPcode2== `OPr2a) begin
+            reg2_load <= `Acc1;
             reg2_val  <= ALU2_result;
             reg2_flag <= `true;
         end
-        else if (ins_to_WB `Opcode2 == `OPlf || ins_to_WB `Opcode2 == `OPli) begin
+        else if (ins_to_WB `OPcode2 == `OPlf || ins_to_WB `OPcode2 == `OPli) begin
             reg2_load <= ins_to_WB `REG2;
-            reg2_val  <= data_to_WB;
+            reg2_val  <= data2_to_WB;
             reg2_flag <= `true;
         end
-        else if (ins_to_WB `Opcode2 == `OPa2r) begin
+        else if (ins_to_WB `OPcode2 == `OPa2r) begin
             reg2_load <= ins_to_WB `REG2;
             reg2_val  <= ALU2_result;
             reg2_flag <= `true;
@@ -502,8 +509,32 @@ always@(posedge clk) begin
             reg2_flag <= `false;
         end
     end
+    else begin
+        reg2_flag <= `false;
+    end
     
-    //jump instruciton logic WB
+    //jump instruction logic WB
+    if(ins_to_WB `OPcode1 == `OPjp8) begin
+        pc_next <= ALU1_result;
+        jump_flag <= `true;
+    end
+    else if (ins_to_WB `OPcode1 == `OPjz8) begin
+        pc_next <= imm_to_WB;
+        jump_flag <= (ALU1_result == 0) ? `true : `false;
+    end
+    else if (ins_to_WB `OPcode1 == `OPjnz8) begin
+        pc_next <= imm_to_WB;
+        jump_flag <= (ALU1_result != 0) ? `true : `false;
+    end
+    else if(ins_to_WB `OPcode1 == `OPjr) begin
+        pc_next <= ALU1_result;
+        jump_flag <= `true;
+    end
+    else if(ins_to_WB `OPcode1 > `OPjr && ins_to_WB `OPcode2 == `OPjr) begin
+        pc_next <= ALU1_result;
+        jump_flag <= `true;
+    end
+    
     
     
 
