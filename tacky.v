@@ -187,7 +187,7 @@ assign i = (tiny ? 0 : (big ? 32767 : (f `FSIGN ? (-ui) : ui)));
 endmodule
 
 
-module MemHandler(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2, iop, stall);
+module MemHandler(outVal, out1, out2, oreg1, oreg2, oop, in1, in2, ireg1, ireg2, iop, stall);
 	input [4:0] iop;
 	input signed `WORD in1, in2;
 	input `REGID ireg1, ireg2;
@@ -483,6 +483,31 @@ reg `WORD data_mem `MEMSIZE;
 reg `WORD ins_to_ALU2;
 reg `TYPEDREG data1_to_ALU2, data2_to_ALU2, imm_to_ALU2;
 
+wire `TYPEDREG memoutVal, alu0_0outVal, alu1_0outVal, alu0_1outVal, alu1_1outVal;
+wire `WORD memout1, alu0_0out1, alu1_0out1, alu0_1out1, alu1_1out1;
+wire `WORD memout2, alu0_0out2, alu1_0out2, alu0_1out2, alu1_1out2;
+wire `REGNUM memoreg1, alu0_0oreg1, alu1_0oreg1, alu0_1oreg1, alu1_1oreg1;
+wire `REGNUM memoreg2, alu0_0oreg2, alu1_0oreg2, alu0_1oreg2, alu1_1oreg2;
+wire [5:0] memoop, alu0_0oop, alu1_0oop, alu0_1oop, alu1_1oop;
+wire alu0_0otyp, alu1_0otyp, alu0_1otyp, alu1_1otyp;
+wire `WORD alu0_0opre, alu1_0opre, alu0_1opre, alu1_1opre;
+wire `TYPEDREG alu1_0inVal, alu1_1inVal;
+wire `WORD memin1, alu0_0in1, alu1_0in1, alu0_1in1, alu1_1in1;
+wire `WORD memin2, alu0_0in2, alu1_0in2, alu0_1in2, alu1_1in2;
+wire `REGNUM memireg1, alu0_0ireg1, alu1_0ireg1, alu0_1ireg1, alu1_1ireg1;
+wire `REGNUM memireg2, alu0_0ireg2, alu1_0ireg2, alu0_1ireg2, alu1_1ireg2;
+wire [5:0] memiop, alu0_0iop, alu1_0iop, alu0_1iop, alu1_1iop;
+wire alu0_0typ, alu1_0typ, alu0_1typ, alu1_1typ;
+wire memstall, alu0_0stall, alu1_0stall, alu0_1stall, alu1_1stall;
+wire `WORD alu0_0ipre, alu1_0ipre, alu0_1ipre, alu1_1ipre;
+
+MemHandler memHandler(memoutVal, memout1, memout2, memoreg1, memoreg2, memoop, memin1, memin2, memireg1, memireg2, memiop, memstall);
+ALU0 alu0_0(alu0_0outVal, alu0_0out1, alu0_0out2, alu0_0oreg1, alu0_0oreg2, alu0_0oop, alu0_0otyp, alu0_0opre, alu0_0in1, alu0_0in2, alu0_0ireg1, alu0_0ireg2, alu0_0iop, alu0_0typ, alu0_0stall, alu0_0ipre);
+ALU1 alu1_0(alu1_0outVal, alu1_0out1, alu1_0out2, alu1_0oreg1, alu1_0oreg2, alu1_0oop, alu1_0otyp, alu1_0opre, alu1_0inVal, alu1_0in1, alu1_0in2, alu1_0ireg1, alu1_0ireg2, alu1_0iop, alu1_0typ, alu1_0stall, alu1_0ipre);
+ALU0 alu0_1(alu0_1outVal, alu0_1out1, alu0_1out2, alu0_1oreg1, alu0_1oreg2, alu0_1oop, alu0_1otyp, alu0_1opre, alu0_1in1, alu0_1in2, alu0_1ireg1, alu0_1ireg2, alu0_1iop, alu0_1typ, alu0_1stall, alu0_1ipre);
+ALU1 alu1_1(alu1_1outVal, alu1_1out1, alu1_1out2, alu1_1oreg1, alu1_1oreg2, alu1_1oop, alu1_1otyp, alu1_1opre, alu1_1inVal, alu1_1in1, alu1_1in2, alu1_1ireg1, alu1_1ireg2, alu1_1iop, alu1_1typ, alu1_1stall, alu1_1ipre);
+
+
 //stage 3 regs
 reg `WORD ins_to_WB;
 reg `TYPEDREG data1_to_WB, data2_to_WB, imm_to_WB;
@@ -524,13 +549,14 @@ always@(posedge clk) begin
 end
 
 //stage 2: ALU/MEM
-always@(posedge clk) begin
 
-    ins_to_ALU2 <= ins_to_ALUMEM;
-    imm_to_ALU2 <= imm_to_ALUMEM;
-    //data1_to_ALU2 <= ;
-    //data2_to_ALU2 <= ;
-end
+ins_to_ALU2 <= ins_to_ALUMEM;
+imm_to_ALU2 <= imm_to_ALUMEM;
+//data1_to_ALU2 <= ;
+//data2_to_ALU2 <= ;
+
+
+
 //stage 3: ALU2
 always@(posedge clk) begin
 
