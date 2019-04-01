@@ -187,6 +187,54 @@ assign i = (tiny ? 0 : (big ? 32767 : (f `FSIGN ? (-ui) : ui)));
 endmodule
 
 
+module MemHandler(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2, iop, stall);
+	input [4:0] iop;
+	input signed `WORD in1, in2;
+	input `REGID ireg1, ireg2;
+	output signed `WORD out1, out2;
+	output `TYPEDREG outVal;
+	output `REGID oreg1, oreg2;	
+	output [4:0] oop;
+	
+	reg [4:0] lastOp;
+	reg lastType;
+	reg signed `WORD lastIn1, lastIn2;
+	reg `REGID lastReg1, lastReg2;
+	reg `TYPEDREG lastVal;
+	
+	assign oop = lastOp;
+	assign oreg1 = lastReg1;
+	assign oreg2 = lastReg2;
+	assign out1 = lastIn1;
+	assign out2 = lastIn2;
+	assign outVal = lastVal;
+	
+	always @(posedge clk) begin #1
+		if (!stall) begin
+			case(iop)
+				`OPlf: begin
+					lastVal <= {1, datamem[in1]};
+				end	
+				`OPli: begin
+					lastVal <= {0, datamem[in1]};
+				end	
+				`OPst: begin
+					datamem[in1] <= in2;
+					lastVal <= 17'b0;
+				end	
+				default: lastVal <= 17'b0;
+			endcase
+			
+			lastOp <= iop;
+			lastReg1 <= ireg1;
+			lastReg2 <= ireg2;
+			lastIn1 <= in1;
+			lastIn2 <= in2;
+		end
+	end
+endmodule
+
+
 // ALU0 - First phase of the ALU
 // Outputs
 //	 	outVal is the output of the first phase alu
@@ -203,22 +251,22 @@ endmodule
 // 		ireg2 is the second register used in the alu.
 // 		iop is the opcode of the instruction.
 // 		typ is the type of number used in the operation.
-module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2, iop, typ, stall);
+module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, opre, in1, in2, ireg1, ireg2, iop, typ, stall, ipre);
 	input [4:0] iop;
 	input typ; //0->integer arithmetic, 1->floating point arithmetic
 	//$acc should always be in1 and $r should be in2.
-	input signed `WORD in1, in2;
-	input reg `REGNUM ireg1, ireg2;
-	output signed `WORD out1, out2;
-	output reg `TYPEDREG outVal;
-	output reg `REGNUM oreg1, oreg2;	
+	input signed `WORD in1, in2, ipre;
+	input `REGID ireg1, ireg2;
+	output signed `WORD out1, out2, opre;
+	output `TYPEDREG outVal;
+	output `REGID oreg1, oreg2;	
 	output [4:0] oop;
 	output otyp;
 	
 	reg [4:0] lastOp;
 	reg lastType;
-	reg signed `WORD lastIn1, lastIn2;
-	reg `REGNUM lastReg1, lastReg2;
+	reg signed `WORD lastIn1, lastIn2, lastPre;
+	reg `REGID lastReg1, lastReg2;
 	reg `TYPEDREG lastVal;
 	
 	assign oop = lastOp;
@@ -228,6 +276,7 @@ module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2,
 	assign out2 = lastIn2;
 	assign otyp = lastType;
 	assign outVal = lastVal;
+	assign outPre = lastPre;
 	
 	wire signed `WORD recr, addr, subr, shr, mulr, sltr;
 	wire signed `WORD outand, outor, outnot, outxor, outslt;
@@ -273,7 +322,7 @@ module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2,
 				end
 				`OPdiv: begin
 					case(typ)
-						0: begin lastVal <= {typ, in1 / in2;} end
+						0: begin lastVal <= {typ, in1 / in2}; end
 						1: begin lastVal <= {typ, recr}; end // Only perform the first half of the fp division here.
 					endcase
 				end
@@ -299,8 +348,38 @@ module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2,
 						0:  begin lastVal <= {!typ, cvti}; end
 						1:  begin lastVal <= {!typ, cvtf}; end
 					endcase
-				end			
-				default: lastVal <= 16'b0;
+				end
+				`OPa2r: begin
+					lastVal <= {typ, in1};
+				end	
+				`OPr2a: begin
+					lastVal <= {typ, in2};
+				end
+				`OPcf8: begin
+					lastVal <= {1, pre, in2};
+				end
+				`OPci8: begin
+					lastVal <= {0, pre, in2};
+				end
+				`OPpre: begin
+					lastVal <= {0, in2};
+				end
+				`OPjp8: begin
+					lastVal <= {0, pre, in2};
+				end
+				`OPjr: begin
+					lastVal <= {0, pre, in2};
+				end
+				`OPjz8: begin
+					lastVal <= {typ, in2};
+				end
+				`OPjnz8: begin
+					if (in1 == 0) begin
+						
+					end
+					lastVal <= {typ, in2};
+				end
+				default: lastVal <= 17'b0;
 			endcase
 			
 			lastOp <= iop;
@@ -309,6 +388,7 @@ module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, in1, in2, ireg1, ireg2,
 			lastIn1 <= in1;
 			lastIn2 <= in2;
 			lastType <= typ;
+			lastPre <= ipre;
 		end
 	end
 endmodule
@@ -330,23 +410,23 @@ endmodule
 // 		ireg2 is the second register used in the alu.
 // 		iop is the opcode of the instruction.
 // 		typ is the type of number used in the operation.
-module ALU1(outVal, out1, out2, oreg1, oreg2, oop, otyp, inVal, in1, in2, ireg1, ireg2, iop, typ, stall);
+module ALU1(outVal, out1, out2, oreg1, oreg2, oop, otyp, opre, inVal, in1, in2, ireg1, ireg2, iop, typ, stall, ipre);
 	input [4:0] iop;
 	input typ; //0->integer arithmetic, 1->floating point arithmetic
 	//$acc should always be in1 and $r should be in2.
-	input signed `WORD in1, in2;
-	input reg `REGNUM ireg1, ireg2;
-	input reg `TYPEDREG inVal;
-	output signed `WORD out1, out2;
-	output reg `TYPEDREG outVal;
-	output reg `REGNUM oreg1, oreg2;	
+	input signed `WORD in1, in2, ipre;
+	input `REGID ireg1, ireg2;
+	input `TYPEDREG inVal;
+	output signed `WORD out1, out2, opre;
+	output `TYPEDREG outVal;
+	output `REGID oreg1, oreg2;	
 	output [4:0] oop;
 	output otyp;
 	
 	reg [4:0] lastOp;
 	reg lastType;
-	reg signed `WORD lastIn1, lastIn2;
-	reg `REGNUM lastReg1, lastReg2;
+	reg signed `WORD lastIn1, lastIn2, lastPre;
+	reg `REGID lastReg1, lastReg2;
 	reg `TYPEDREG lastVal;
 	
 	assign oop = lastOp;
@@ -356,6 +436,7 @@ module ALU1(outVal, out1, out2, oreg1, oreg2, oop, otyp, inVal, in1, in2, ireg1,
 	assign out2 = lastIn2;
 	assign otyp = lastType;
 	assign outVal = lastVal;
+	assign outPre = lastPre;
 	
 	wire signed `WORD divr;
 
@@ -379,6 +460,7 @@ module ALU1(outVal, out1, out2, oreg1, oreg2, oop, otyp, inVal, in1, in2, ireg1,
 			lastIn1 <= in1;
 			lastIn2 <= in2;
 			lastType <= typ;
+			lastPre <= ipre;
 		end
 	end
 endmodule
