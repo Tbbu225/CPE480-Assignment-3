@@ -433,7 +433,7 @@ always@(posedge clk) begin
     if(reg2_flag) regfile[reg2_load] <= reg2_load_val;
     if(instruction `OPcode1 == `OPpre) pre <= instruction `IMM8;
     if(instruction `OPcode1 == `OPcf8) imm_to_ALUMEM <= {`Float, pre, instruction `IMM8};
-    if(instruction `OPcode1 == `OPci8) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
+    if(instruction `OPcode1 == `OPci8 || (instruction `OPcode1 >= `OPjp8 && instruction `OPcode1 <= `OPjnz) ) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
     acc0_val <= regfile[0];
     acc1_val <= regfile[1];
     r1_val <= regfile`REG1;
