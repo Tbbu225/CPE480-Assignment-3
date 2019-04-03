@@ -594,6 +594,7 @@ always@(posedge reset) begin
     $readmemh1(instruction_mem);
     $readmemh2(data_mem);
     pc <= 0;
+    halt <= 0;
 end
 
 //stage 0: instruction fetch
