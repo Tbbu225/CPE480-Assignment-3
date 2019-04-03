@@ -845,7 +845,7 @@ tacky_processor PE(halted, reset, clk);
 
 initial begin
   $dumpfile;
-  $dumpvars(0, PE);
+  $dumpvars(1, PE.pc);
   #10 reset = 1;
   #10 reset = 0;
   while (!halted) begin
@@ -856,7 +856,7 @@ initial begin
 end
 
 initial begin
-    #(10**10) $finish;
+    #(10**4) $finish;
 end
 
 endmodule
