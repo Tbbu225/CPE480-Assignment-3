@@ -596,58 +596,6 @@ always@(posedge clk) begin
     instruction <= instruction[pc];
     pc_inc <= pc + 1; 
 	
-<<<<<<< HEAD
-    //Checks for dependencies on accumulator 0
-	if (R_ACC0 == W1_ACC0) begin
-        case (R_ACC0)
-        W1_ACC0 : NOPs = 4;
-        W2_ACC0 : NOPs = 3;
-        W3_ACC0 : NOPs = 2;
-        default : NOPs = 0;
-        endcase
-
-        //Checks for dependencies on accumulator 1
-        case (R_ACC1)
-        W1_ACC1 : NOPs = 4;
-        W2_ACC1 : NOPs = 3;
-        W3_ACC1 : NOPs = 2;
-        default : NOPs = 0;
-        endcase
-
-        //Checks for dependencies on reg 1 
-        case (R_REG1)
-        W1_ACC0 : NOPs = 4;
-        W1_ACC1 : NOPs = 4;
-        W1_REG1 : NOPs = 4;
-        W1_REG2 : NOPs = 4;
-        W2_ACC0 : NOPs = 3;
-        W2_ACC1 : NOPs = 3;
-        W2_REG1 : NOPs = 3;
-        W2_REG2 : NOPs = 3;
-        W3_ACC0 : NOPs = 2;
-        W3_ACC1 : NOPs = 2;
-        W3_REG1 : NOPs = 2;
-        W3_REG2 : NOPs = 2;
-        default : NOPs = 0;	
-        endcase
-
-        //Checks for dependencies on reg 2 
-        case (R_REG2)
-        W1_ACC0 : NOPs = 4;
-        W1_ACC1 : NOPs = 4;
-        W1_REG1 : NOPs = 4;
-        W1_REG2 : NOPs = 4;
-        W2_ACC0 : NOPs = 3;
-        W2_ACC1 : NOPs = 3;
-        W2_REG1 : NOPs = 3;
-        W2_REG2 : NOPs = 3;
-        W3_ACC0 : NOPs = 2;
-        W3_ACC1 : NOPs = 2;
-        W3_REG1 : NOPs = 2;
-        W3_REG2 : NOPs = 2;
-        default : NOPs = 0;	
-        endcase
-        
     //If a jump, pad NOPs until jump is gone
     if (IF_JumpFlag == `true) begin
 	NOPs = 4;
