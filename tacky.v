@@ -49,8 +49,8 @@
 `define ALU     	5'b1xxxx
 
 //Accumulator values
-`define Acc0        3'b000
-`define Acc1        3'b001
+`define Acc0        [0]
+`define Acc1        [1]
 
 //Type values
 `define Int         1'b0
@@ -413,9 +413,7 @@ ALU1 alu1_1(alu1_1outVal, alu1_1out1, alu1_1out2, alu1_1oimm, alu1_1oinst, alu1_
 
 
 //stage 4 regs
-reg `TYPEDREG reg1_load_val, reg2_load_val;
-reg `REGNUM reg1_load, reg2_load;
-reg reg1_load_flag, reg2_load_flag, jump_flag;
+reg jump_flag;
 reg `WORD pc_next;
 
 
@@ -435,8 +433,6 @@ end
 
 //stage 1: register read
 always@(posedge clk) begin
-    if(reg1_flag) regfile[reg1_load] <= reg1_load_val;
-    if(reg2_flag) regfile[reg2_load] <= reg2_load_val;
     if(instruction `OPcode1 == `OPpre) pre <= instruction `IMM8;
     if(instruction `OPcode1 == `OPcf8) imm_to_ALUMEM <= {`Float, pre, instruction `IMM8};
     if(instruction `OPcode1 == `OPci8 || (instruction `OPcode1 >= `OPjp8 && instruction `OPcode1 <= `OPjnz8) ) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
@@ -525,52 +521,29 @@ always@(posedge clk) begin
     
     //First instruction logic WB
     if(ins_to_WB `OPcode1 >= `OPsh || ins_to_WB `OPcode1 == `OPr2a) begin
-        reg1_load <= `Acc0;
-        reg1_load_val  <= ALU1_result;
-        reg1_flag <= `true;
+        regfile `Acc0 <= ALU1_result;
     end
     else if (ins_to_WB `OPcode1 == `OPlf || ins_to_WB `OPcode1 == `OPli) begin
-        reg1_load <= ins_to_WB `REG1;
-        reg1_load_val  <= data1_to_WB;
-        reg1_flag <= `true;
+        regfile[ins_to_WB `REG1] <= data1_to_WB;
     end
     else if (ins_to_WB `OPcode1 == `OPa2r) begin
-        reg1_load <= ins_to_WB `REG1;
-        reg1_load_val  <= ALU1_result;
-        reg1_flag <= `true;
+        regfile[ins_to_WB `REG1] <= ALU1_result;
     end
     else if(ins_to_WB `OPcode1 == `OPcf8 || ins_to_WB `OPcode1 == `OPci8) begin
-        reg1_load <= ins_to_WB `REG1;
-        reg1_load_val  <= imm_to_WB;
-        reg1_flag <= `true;
-    end
-    else begin
-        reg1_flag <= `false;
+        regfile[ins_to_WB `REG1] <= imm_to_WB;
     end
     
     //Second instruction logic WB (if present)
     if(ins_to_WB `OPcode1 >= `OPjr)  begin
         if(ins_to_WB `OPcode2 >= `OPsh || ins_to_WB `OPcode2== `OPr2a) begin
-            reg2_load <= `Acc1;
-            reg2_load_val  <= ALU2_result;
-            reg2_flag <= `true;
+            regfile `Acc1 <= ALU2_result;
         end
         else if (ins_to_WB `OPcode2 == `OPlf || ins_to_WB `OPcode2 == `OPli) begin
-            reg2_load <= ins_to_WB `REG2;
-            reg2_load_val  <= data2_to_WB;
-            reg2_flag <= `true;
+            regfile[ins_to_WB `REG2] <= data2_to_WB;
         end
         else if (ins_to_WB `OPcode2 == `OPa2r) begin
-            reg2_load <= ins_to_WB `REG2;
-            reg2_load_val  <= ALU2_result;
-            reg2_flag <= `true;
+            regfile[ins_to_WB `REG2] <= ALU2_result;
         end
-        else begin
-            reg2_flag <= `false;
-        end
-    end
-    else begin
-        reg2_flag <= `false;
     end
     
     //jump instruction logic WB
@@ -597,8 +570,6 @@ always@(posedge clk) begin
     else begin
         jump_flag <= `false;
     end
-    
-    
     
 
 end
