@@ -564,7 +564,9 @@ end
 
 //stage 0: instruction fetch
 always@(posedge clk) begin
-    pc <= (jump_flag) ? pc_next : pc_inc + 1;
+    if(NOPs == 0) begin
+        pc <= (jump_flag) ? pc_next : pc_inc + 1;
+    end
     instruction <= instruction[pc];
     pc_inc <= pc + 1; 
 	
@@ -591,7 +593,7 @@ always@(posedge clk) begin
     RT_REG1 <= R_REG1;
     case (RT_REG1)
 	W1_ACC0 : NOPs <= 4;
-        W1_ACC1 : NOPs <= 4;
+    W1_ACC1 : NOPs <= 4;
 	W1_REG1 : NOPs <= 4;
 	W1_REG2 : NOPs <= 4;
 	W2_ACC0 : NOPs <= 3;
