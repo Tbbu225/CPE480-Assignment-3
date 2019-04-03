@@ -583,54 +583,55 @@ always@(posedge clk) begin
 	
     //Checks for dependencies on accumulator 0
 	if (R_ACC0 == W1_ACC0) begin
-    case (R_ACC0)
-	W1_ACC0 : NOPs = 4;
-	W2_ACC0 : NOPs = 3;
-	W3_ACC0 : NOPs = 2;
-	default : NOPs = 0;
-    endcase
-
-    //Checks for dependencies on accumulator 1
-    case (R_ACC1)
-	W1_ACC1 : NOPs = 4;
-	W2_ACC1 : NOPs = 3;
-	W3_ACC1 : NOPs = 2;
+        case (R_ACC0)
+        W1_ACC0 : NOPs = 4;
+        W2_ACC0 : NOPs = 3;
+        W3_ACC0 : NOPs = 2;
         default : NOPs = 0;
-    endcase
+        endcase
 
-    //Checks for dependencies on reg 1 
-    case (R_REG1)
-	W1_ACC0 : NOPs = 4;
-	W1_ACC1 : NOPs = 4;
-	W1_REG1 : NOPs = 4;
-	W1_REG2 : NOPs = 4;
-	W2_ACC0 : NOPs = 3;
-	W2_ACC1 : NOPs = 3;
-	W2_REG1 : NOPs = 3;
-	W2_REG2 : NOPs = 3;
-	W3_ACC0 : NOPs = 2;
-	W3_ACC1 : NOPs = 2;
-	W3_REG1 : NOPs = 2;
-	W3_REG2 : NOPs = 2;
-	default : NOPs = 0;	
-    endcase
+        //Checks for dependencies on accumulator 1
+        case (R_ACC1)
+        W1_ACC1 : NOPs = 4;
+        W2_ACC1 : NOPs = 3;
+        W3_ACC1 : NOPs = 2;
+        default : NOPs = 0;
+        endcase
 
-    //Checks for dependencies on reg 2 
-    case (R_REG2)
-	W1_ACC0 : NOPs = 4;
-	W1_ACC1 : NOPs = 4;
-	W1_REG1 : NOPs = 4;
-	W1_REG2 : NOPs = 4;
-	W2_ACC0 : NOPs = 3;
-	W2_ACC1 : NOPs = 3;
-	W2_REG1 : NOPs = 3;
-	W2_REG2 : NOPs = 3;
-	W3_ACC0 : NOPs = 2;
-	W3_ACC1 : NOPs = 2;
-	W3_REG1 : NOPs = 2;
-	W3_REG2 : NOPs = 2;
-	default : NOPs = 0;	
-    endcase
+        //Checks for dependencies on reg 1 
+        case (R_REG1)
+        W1_ACC0 : NOPs = 4;
+        W1_ACC1 : NOPs = 4;
+        W1_REG1 : NOPs = 4;
+        W1_REG2 : NOPs = 4;
+        W2_ACC0 : NOPs = 3;
+        W2_ACC1 : NOPs = 3;
+        W2_REG1 : NOPs = 3;
+        W2_REG2 : NOPs = 3;
+        W3_ACC0 : NOPs = 2;
+        W3_ACC1 : NOPs = 2;
+        W3_REG1 : NOPs = 2;
+        W3_REG2 : NOPs = 2;
+        default : NOPs = 0;	
+        endcase
+
+        //Checks for dependencies on reg 2 
+        case (R_REG2)
+        W1_ACC0 : NOPs = 4;
+        W1_ACC1 : NOPs = 4;
+        W1_REG1 : NOPs = 4;
+        W1_REG2 : NOPs = 4;
+        W2_ACC0 : NOPs = 3;
+        W2_ACC1 : NOPs = 3;
+        W2_REG1 : NOPs = 3;
+        W2_REG2 : NOPs = 3;
+        W3_ACC0 : NOPs = 2;
+        W3_ACC1 : NOPs = 2;
+        W3_REG1 : NOPs = 2;
+        W3_REG2 : NOPs = 2;
+        default : NOPs = 0;	
+        endcase
+    end
 end
 
 //stage 1: register read
