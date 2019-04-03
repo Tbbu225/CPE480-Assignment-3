@@ -199,7 +199,7 @@ module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_
 	input `WORD RR_inst;
 	
 	if (RR_inst `OPcode1 == `OPsys) begin
-		assign RR_SysFlag = `true
+		assign RR_SysFlag = `true;
 		assign RR_JumpFlag = `false;
 	end
 	else if ((RR_inst `OPcode1 == `OPjz8) || (RR_inst `OPcode1 == `OPjnz8) || (RR_inst `OPcode1 == `OPjr) || (RR_inst `OPcode1 == `OPjp8) || (RR_inst `OPcode2 == `OPjr)) begin  
@@ -496,7 +496,7 @@ endmodule
 
 module tacky_processor(halt, reset, clk);
 
-input halt;
+output reg halt;
 input reset;
 input clk;
 
