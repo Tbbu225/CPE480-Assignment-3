@@ -242,56 +242,63 @@ module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_
 	end
 endmodule
 
-//Identifies which registers and accumulators are written to, if any
-module RegistersWrittenTo(Write_ACC0, Write_REG1, Write_ACC1, Write_REG2, WR_inst);
-	output wire [3:0] Write_ACC0;
-	output wire [3:0] Write_REG1;
-	output wire [3:0] Write_ACC1;
-	output wire [3:0] Write_REG2;
+//Identifies which registers and accumulators are read from, if any
+module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_JumpFlag, RR_inst);
+	output wire [3:0] Field1_ACC0;
+	output wire [3:0] Field1_REG1;
+	output wire [3:0] Field2_ACC1;
+	output wire [3:0] Field2_REG2;
+	output RR_JumpFlag;
 	
-	input `WORD WR_inst;
+	input `WORD RR_inst;
 	
-	//if the first opcode is a register writer, assign the appropriate register to Write_REG1
-	if ((WR_inst `OPcode1 == `OPcf8) || (WR_inst `OPcode1 == `OPci8) || (WR_inst `OPcode1 == `OPa2r) || (WR_inst `OPcode1 == `OPli) || (WR_inst `OPcode1 == `OPlf)) begin
-		
-		assign Write_REG1 = WR_inst `REG1; 
+	if ((RR_inst `OPcode1 == `OPjz8) || (RR_inst `OPcode1 == `OPjnz8) || (RR_inst `OPcode1 == `OPjr) || (RR_inst `OPcode1 == `OPjp8) || (RR_inst `OPcode2 == `OPjr)) begin  
+		RR_JumpFlag = `true;
 	end
 	else begin
-		
-		assign Write_REG1 = 4'b1110;
-	end
-	
-	//if the first opcode is an accumulator writer, assign the appropriate accumulator to Write_ACC0
-	if ((WR_inst `OPcode1 == `OPcvt) || (WR_inst `OPcode1 == `OPr2a) || (WR_inst `OPcode1 == `OPsh) || (WR_inst `OPcode1 == `OPslt) || (WR_inst `OPcode1 == `OPadd) || (WR_inst `OPcode1 == `OPsub) || (WR_inst `OPcode1 == `OPdiv) || (WR_inst `OPcode1 == `OPmul) || (WR_inst `OPcode1 == `OPnot) || (WR_inst `OPcode1 == `OPxor) || (WR_inst `OPcode1 == `OPand) || (WR_inst `OPcode1 == `OPor)) begin
-	
-		assign Write_ACC0 = 4'b0000;
-	end
-	else begin
-	
-		assign Write_ACC0 = 4'b1110;
-	end
-	
-	//if the instruction can be a two opcode word
-	if (WR_inst `OPcode1 > `OPjr) begin
-		
-		//if the possible second opcode is a register writer, assign the appropriate register to Write_REG2
-		if ((WR_inst `OPcode2 == `OPcf8) || (WR_inst `OPcode2 == `OPci8) || (WR_inst `OPcode2 == `OPa2r) || (WR_inst `OPcode2 == `OPli) || (WR_inst `OPcode2 == `OPlf)) begin
+		RR_JumpFlag = `false;.
+		//if the first opcode is a register reader, assign the appropriate register to Field1_REG1
+		if ((RR_inst `OPcode1 == `OPst) || (RR_inst `OPcode1 == `OPcvt) || (RR_inst `OPcode1 == `OPr2a) || (RR_inst `OPcode1 == `OPsh) || (RR_inst `OPcode1 == `OPslt) || (RR_inst `OPcode1 == `OPadd) || (RR_inst `OPcode1 == `OPsub) || (RR_inst `OPcode1 == `OPdiv) || (RR_inst `OPcode1 == `OPmul) || (RR_inst `OPcode1 == `OPnot) || (RR_inst `OPcode1 == `OPxor) || (RR_inst `OPcode1 == `OPand) || (RR_inst `OPcode1 == `OPor)) begin
 			
-			assign Write_REG2 = WR_inst `REG2; 
-		end
-		else begin 
-			
-			assign Write_REG2 = 4'b1110;
-		end
-		
-		//if the second opcode is an accumulator writer, assign the appropriate accumulator to Write_ACC1
-		if ((WR_inst `OPcode1 == `OPcvt) || (WR_inst `OPcode1 == `OPr2a) || (WR_inst `OPcode1 == `OPsh) || (WR_inst `OPcode1 == `OPslt) || (WR_inst `OPcode1 == `OPadd) || (WR_inst `OPcode1 == `OPsub) || (WR_inst `OPcode1 == `OPdiv) || (WR_inst `OPcode1 == `OPmul) || (WR_inst `OPcode1 == `OPnot) || (WR_inst `OPcode1 == `OPxor) || (WR_inst `OPcode1 == `OPand) || (WR_inst `OPcode1 == `OPor)) begin
-	
-		assign Write_ACC1 = 4'b0001;
+			assign Field1_REG1 = RR_inst `REG1; 
 		end
 		else begin
-	
-		assign Write_ACC1 = 4'b1110;
+			
+			assign Field1_REG1 = 4'b1111;
+		end
+		
+		//if the first opcode is an accumulator reader, assign the appropriate accumulator to Field1_ACC0
+		if ((RR_inst `OPcode1 == `OPst) || (RR_inst `OPcode1 == `OPa2r) || (RR_inst `OPcode1 == `OPli) || (RR_inst `OPcode1 == `OPlf) || (RR_inst `OPcode1 == `OPsh) || (RR_inst `OPcode1 == `OPslt) || (RR_inst `OPcode1 == `OPxor) || (RR_inst `OPcode1 == `OPand) || (RR_inst `OPcode1 == `OPor)) begin
+		
+			assign Field1_ACC0 = 4'b0000;
+		end
+		else begin
+		
+			assign Field1_ACC0 = 4'b1111;
+		end
+		
+		//if the instruction can be a two opcode word
+		if (RR_inst `OPcode1 > `OPjr) begin	
+		
+			//if the possible second opcode is a register reader, assign the appropriate register to Field2_REG2
+			if ((RR_inst `OPcode2 == `OPst) || (RR_inst `OPcode2 == `OPcvt) || (RR_inst `OPcode2 == `OPr2a) || (RR_inst `OPcode2 == `OPsh) || (RR_inst `OPcode2 == `OPslt) || (RR_inst `OPcode2 == `OPadd) || (RR_inst `OPcode2 == `OPsub) || (RR_inst `OPcode2 == `OPdiv) || (RR_inst `OPcode2 == `OPmul) || (RR_inst `OPcode2 == `OPnot) || (RR_inst `OPcode2 == `OPxor) || (RR_inst `OPcode2 == `OPand) || (RR_inst `OPcode2 == `OPor)) begin
+				
+				assign Field2_REG2 = RR_inst `REG2; 
+			end
+			else begin 
+				
+				assign Field2_REG2 = 4'b1111;
+			end
+			
+			//if the possible second opcode is an accumulator reader, assign the appropriate accumulator to Field2_ACC1
+			if ((RR_inst `OPcode2 == `OPst) || (RR_inst `OPcode2 == `OPa2r) || (RR_inst `OPcode2 == `OPli) || (RR_inst `OPcode2 == `OPlf) || (RR_inst `OPcode2 == `OPsh) || (RR_inst `OPcode2 == `OPslt) || (RR_inst `OPcode2 == `OPxor) || (RR_inst `OPcode2 == `OPand) || (RR_inst `OPcode2 == `OPor)) begin	
+				
+				assign Field2_ACC1 = 4'b0001;
+			end
+			else begin
+				
+				assign Field2_ACC1 = 4'b1111;
+			end
 		end
 	end
 endmodule
@@ -529,8 +536,10 @@ ALU1 alu1_1(alu1_1outVal, alu1_1out1, alu1_1out2, alu1_1oimm, alu1_1oinst, alu1_
 reg jump_flag;
 reg `WORD pc_next;
 
+wire IF_JumpFlag;
+
 //Determines which registers are being read from in stage 0 (1111 if not read from)
-RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, instruction);
+RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, IF_JumpFlag, instruction);
 //Determines which registers are being written to in stage 1 (1110 if not written to)
 RegistersWrittenTo RegsWritten1(W1_ACC0, W1_REG1, W1_ACC1, W1_REG2, ins_to_ALUMEM);
 //Determines which registers are being written to in stage 2 (1110 if not written to)
@@ -564,6 +573,13 @@ wire [3:0] W3_ACC1;
 wire [3:0] W3_REG2;
 
 //NOPs needed to avoid dependency
+//NOPs needed to avoid dependency
+reg [1:0] NOPs_win1;
+reg [1:0] NOPs_win2;
+reg [1:0] NOPs1;
+reg [1:0] NOPs2;
+reg [1:0] NOPs3;
+reg [1:0] NOPs4;
 reg [1:0] NOPs, NOP_timer;
 
 always@(posedge reset) begin
@@ -581,6 +597,7 @@ always@(posedge clk) begin
     instruction <= instruction[pc];
     pc_inc <= pc + 1; 
 	
+<<<<<<< HEAD
     //Checks for dependencies on accumulator 0
 	if (R_ACC0 == W1_ACC0) begin
         case (R_ACC0)
@@ -631,6 +648,84 @@ always@(posedge clk) begin
         W3_REG2 : NOPs = 2;
         default : NOPs = 0;	
         endcase
+        
+    //If a jump, pad NOPs until jump is gone
+    if (IF_JumpFlag == `true) begin
+	NOPs = 4;
+    end
+    //Else, check for dependencies
+    else begin 
+	    //Checks for dependencies on accumulator 0
+	    if (R_ACC0 == W1_ACC0) begin
+	    case (R_ACC0)
+	     	W1_ACC0 : NOPs1 = 4;
+		W2_ACC0 : NOPs1 = 3;
+		W3_ACC0 : NOPs1 = 2;
+		default : NOPs1 = 0;
+	    endcase
+
+	    //Checks for dependencies on accumulator 1
+	    case (R_ACC1)
+	    	W1_ACC1 : NOPs2 = 4;
+ 		W2_ACC1 : NOPs2 = 3;
+		W3_ACC1 : NOPs2 = 2;
+		default : NOPs2 = 0;
+            endcase
+
+	    //Checks for dependencies on reg 1 
+	    case (R_REG1)
+		W1_ACC0 : NOPs3 = 4;
+		W1_ACC1 : NOPs3 = 4;
+		W1_REG1 : NOPs3 = 4;
+		W1_REG2 : NOPs3 = 4;
+		W2_ACC0 : NOPs3 = 3;
+		W2_ACC1 : NOPs3 = 3;
+		W2_REG1 : NOPs3 = 3;
+		W2_REG2 : NOPs3 = 3;
+		W3_ACC0 : NOPs3 = 2;
+		W3_ACC1 : NOPs3 = 2;
+		W3_REG1 : NOPs3 = 2;
+		W3_REG2 : NOPs3 = 2;
+		default : NOPs3 = 0;	
+	    endcase
+
+	    //Checks for dependencies on reg 2 
+	    case (R_REG2)
+		W1_ACC0 : NOPs4 = 4;
+		W1_ACC1 : NOPs4 = 4;
+		W1_REG1 : NOPs4 = 4;
+		W1_REG2 : NOPs4 = 4;
+		W2_ACC0 : NOPs4 = 3;
+		W2_ACC1 : NOPs4 = 3;
+		W2_REG1 : NOPs4 = 3;
+		W2_REG2 : NOPs4 = 3;
+		W3_ACC0 : NOPs4 = 2;
+		W3_ACC1 : NOPs4 = 2;
+		W3_REG1 : NOPs4 = 2;
+		W3_REG2 : NOPs4 = 2;
+		default : NOPs4 = 0;	
+	    endcase
+		
+	    if (NOPs1 > NOPs2) begin
+	 	NOPs_win1 = NOPs1;
+       	    end
+	    else begin
+		NOPs_win1 = NOPs2;
+	    end
+		
+	    if (NOPs3 > NOPs4) begin
+		NOPs_win2 = NOPs3;
+	    end
+	    else begin
+		NOPs_win2 = NOPs4;
+	    end
+		
+	    if (NOPs_win1 > NOPs_win2) begin
+		NOPs = NOPs_win1;
+	    end
+	    else begin
+		NOPs = NOPs_win2;
+	    end
     end
 end
 
