@@ -243,7 +243,7 @@ module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_
 endmodule
 
 //Identifies which registers and accumulators are written to, if any
-module RegistersWrittenTo(Write_ACC0, Write_REG1, Write_ACC1, Write_REG2, RW_inst);
+module RegistersWrittenTo(Write_ACC0, Write_REG1, Write_ACC1, Write_REG2, WR_inst);
 	output wire [3:0] Write_ACC0;
 	output wire [3:0] Write_REG1;
 	output wire [3:0] Write_ACC1;
@@ -482,6 +482,10 @@ endmodule
 
 module tacky_processor(halt, reset, clk);
 
+input halt;
+input reset;
+input clk;
+
 //stage 0 regs & memory
 reg `WORD pc, pc_inc, instruction;
 reg `WORD instruction_mem `MEMSIZE;
@@ -637,8 +641,8 @@ always@(posedge clk) begin
     if(instruction `OPcode1 == `OPci8 || (instruction `OPcode1 >= `OPjp8 && instruction `OPcode1 <= `OPjnz8) ) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
     acc0_val <= regfile[0];
     acc1_val <= regfile[1];
-    r1_val <= regfile`REG1;
-    r2_val <= regfile`REG2;
+    r1_val <= regfile[instruction`REG1];
+    r2_val <= regfile[instruction`REG2];
     ins_to_ALUMEM <= instruction;
 	
 end
