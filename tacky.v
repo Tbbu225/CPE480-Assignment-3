@@ -469,7 +469,7 @@ endmodule
 module tacky_processor(halt, reset, clk);
 
 //stage 0 regs & memory
-reg `WORD next_pc, pc, pc_inc, instruction;
+reg `WORD pc, pc_inc, instruction;
 reg `WORD instruction_mem `MEMSIZE;
 
 //stage 1 regs
@@ -529,9 +529,9 @@ end
 
 //stage 0: instruction fetch
 always@(posedge clk) begin
-    pc <= next_pc;
+    pc <= (jump_flag) ? pc_next : pc_inc + 1;
     instruction <= instruction[pc];
-    pc_inc <= (jump_flag) ? pc_next : pc_inc + 1;
+    pc_inc <= pc + 1; 
 end
 
 //stage 1: register read
@@ -540,7 +540,7 @@ always@(posedge clk) begin
     if(reg2_flag) regfile[reg2_load] <= reg2_load_val;
     if(instruction `OPcode1 == `OPpre) pre <= instruction `IMM8;
     if(instruction `OPcode1 == `OPcf8) imm_to_ALUMEM <= {`Float, pre, instruction `IMM8};
-    if(instruction `OPcode1 == `OPci8 || (instruction `OPcode1 >= `OPjp8 && instruction `OPcode1 <= `OPjnz) ) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
+    if(instruction `OPcode1 == `OPci8 || (instruction `OPcode1 >= `OPjp8 && instruction `OPcode1 <= `OPjnz8) ) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
     acc0_val <= regfile[0];
     acc1_val <= regfile[1];
     r1_val <= regfile`REG1;
