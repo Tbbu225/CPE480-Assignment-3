@@ -603,59 +603,58 @@ always@(posedge clk) begin
     //Else, check for dependencies
     else begin 
 	    //Checks for dependencies on accumulator 0
-	    if (R_ACC0 == W1_ACC0) begin
 	    case (R_ACC0)
-	     	W1_ACC0 : NOPs1 = 4;
-		W2_ACC0 : NOPs1 = 3;
-		W3_ACC0 : NOPs1 = 2;
-		default : NOPs1 = 0;
+            W1_ACC0 : NOPs1 = 4;
+            W2_ACC0 : NOPs1 = 3;
+            W3_ACC0 : NOPs1 = 2;
+            default : NOPs1 = 0;
 	    endcase
 
 	    //Checks for dependencies on accumulator 1
 	    case (R_ACC1)
 	    	W1_ACC1 : NOPs2 = 4;
- 		W2_ACC1 : NOPs2 = 3;
-		W3_ACC1 : NOPs2 = 2;
-		default : NOPs2 = 0;
-            endcase
+            W2_ACC1 : NOPs2 = 3;
+            W3_ACC1 : NOPs2 = 2;
+            default : NOPs2 = 0;
+        endcase
 
 	    //Checks for dependencies on reg 1 
 	    case (R_REG1)
-		W1_ACC0 : NOPs3 = 4;
-		W1_ACC1 : NOPs3 = 4;
-		W1_REG1 : NOPs3 = 4;
-		W1_REG2 : NOPs3 = 4;
-		W2_ACC0 : NOPs3 = 3;
-		W2_ACC1 : NOPs3 = 3;
-		W2_REG1 : NOPs3 = 3;
-		W2_REG2 : NOPs3 = 3;
-		W3_ACC0 : NOPs3 = 2;
-		W3_ACC1 : NOPs3 = 2;
-		W3_REG1 : NOPs3 = 2;
-		W3_REG2 : NOPs3 = 2;
-		default : NOPs3 = 0;	
+            W1_ACC0 : NOPs3 = 4;
+            W1_ACC1 : NOPs3 = 4;
+            W1_REG1 : NOPs3 = 4;
+            W1_REG2 : NOPs3 = 4;
+            W2_ACC0 : NOPs3 = 3;
+            W2_ACC1 : NOPs3 = 3;
+            W2_REG1 : NOPs3 = 3;
+            W2_REG2 : NOPs3 = 3;
+            W3_ACC0 : NOPs3 = 2;
+            W3_ACC1 : NOPs3 = 2;
+            W3_REG1 : NOPs3 = 2;
+            W3_REG2 : NOPs3 = 2;
+            default : NOPs3 = 0;	
 	    endcase
 
 	    //Checks for dependencies on reg 2 
 	    case (R_REG2)
-		W1_ACC0 : NOPs4 = 4;
-		W1_ACC1 : NOPs4 = 4;
-		W1_REG1 : NOPs4 = 4;
-		W1_REG2 : NOPs4 = 4;
-		W2_ACC0 : NOPs4 = 3;
-		W2_ACC1 : NOPs4 = 3;
-		W2_REG1 : NOPs4 = 3;
-		W2_REG2 : NOPs4 = 3;
-		W3_ACC0 : NOPs4 = 2;
-		W3_ACC1 : NOPs4 = 2;
-		W3_REG1 : NOPs4 = 2;
-		W3_REG2 : NOPs4 = 2;
-		default : NOPs4 = 0;	
+            W1_ACC0 : NOPs4 = 4;
+            W1_ACC1 : NOPs4 = 4;
+            W1_REG1 : NOPs4 = 4;
+            W1_REG2 : NOPs4 = 4;
+            W2_ACC0 : NOPs4 = 3;
+            W2_ACC1 : NOPs4 = 3;
+            W2_REG1 : NOPs4 = 3;
+            W2_REG2 : NOPs4 = 3;
+            W3_ACC0 : NOPs4 = 2;
+            W3_ACC1 : NOPs4 = 2;
+            W3_REG1 : NOPs4 = 2;
+            W3_REG2 : NOPs4 = 2;
+            default : NOPs4 = 0;	
 	    endcase
 		
 	    if (NOPs1 > NOPs2) begin
 	 	NOPs_win1 = NOPs1;
-       	    end
+        end
 	    else begin
 		NOPs_win1 = NOPs2;
 	    end
@@ -680,7 +679,7 @@ end
 always@(posedge clk) begin
     NOP_timer <= (NOPs > 0) ? NOPs : 2'b0;
     if(NOP_timer > 0) begin
-        ins_to_ALUMEM <= {`OPno, `Acc0, `OPno, `Acc1 };
+        ins_to_ALUMEM <= {`OPno, 3'b000, `OPno, 3'b001 };
         NOP_timer <= NOP_timer - 1; 
     end
     else begin
