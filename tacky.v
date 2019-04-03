@@ -563,6 +563,7 @@ wire [3:0] W3_REG1;
 wire [3:0] W3_ACC1;
 wire [3:0] W3_REG2;
 
+//Commit check
 //Temporary regs for read reg values
 reg [4:0] RT_ACC0, RT_REG1, RT_ACC1, RT_REG2;
 
