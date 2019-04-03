@@ -11,6 +11,7 @@
 `define REGSIZE     [7:0]
 `define MEMSIZE     [65535:0]
 `define REGNUM      [2:0]
+`define OPcodeID    [4:0]
 
 // opcode values, also state numbers
 `define OPno        5'b00000
@@ -186,55 +187,6 @@ assign ui = {1'b1, f `FFRAC, 16'b0} >> ((128+22) - f `FEXP);
 assign i = (tiny ? 0 : (big ? 32767 : (f `FSIGN ? (-ui) : ui)));
 endmodule
 
-
-module MemHandler(outVal, out1, out2, oreg1, oreg2, oop, in1, in2, ireg1, ireg2, iop, stall);
-	input [4:0] iop;
-	input signed `WORD in1, in2;
-	input `REGID ireg1, ireg2;
-	output signed `WORD out1, out2;
-	output `TYPEDREG outVal;
-	output `REGID oreg1, oreg2;	
-	output [4:0] oop;
-	
-	reg [4:0] lastOp;
-	reg lastType;
-	reg signed `WORD lastIn1, lastIn2;
-	reg `REGID lastReg1, lastReg2;
-	reg `TYPEDREG lastVal;
-	
-	assign oop = lastOp;
-	assign oreg1 = lastReg1;
-	assign oreg2 = lastReg2;
-	assign out1 = lastIn1;
-	assign out2 = lastIn2;
-	assign outVal = lastVal;
-	
-	always @(posedge clk) begin #1
-		if (!stall) begin
-			case(iop)
-				`OPlf: begin
-					lastVal <= {1, datamem[in1]};
-				end	
-				`OPli: begin
-					lastVal <= {0, datamem[in1]};
-				end	
-				`OPst: begin
-					datamem[in1] <= in2;
-					lastVal <= 17'b0;
-				end	
-				default: lastVal <= 17'b0;
-			endcase
-			
-			lastOp <= iop;
-			lastReg1 <= ireg1;
-			lastReg2 <= ireg2;
-			lastIn1 <= in1;
-			lastIn2 <= in2;
-		end
-	end
-endmodule
-
-
 // ALU0 - First phase of the ALU
 // Outputs
 //	 	outVal is the output of the first phase alu
@@ -251,33 +203,31 @@ endmodule
 // 		ireg2 is the second register used in the alu.
 // 		iop is the opcode of the instruction.
 // 		typ is the type of number used in the operation.
-module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, opre, in1, in2, ireg1, ireg2, iop, typ, stall, ipre);
-	input [4:0] iop;
-	input typ; //0->integer arithmetic, 1->floating point arithmetic
-	//$acc should always be in1 and $r should be in2.
-	input signed `WORD in1, in2, ipre;
-	input `REGID ireg1, ireg2;
-	output signed `WORD out1, out2, opre;
-	output `TYPEDREG outVal;
-	output `REGID oreg1, oreg2;	
-	output [4:0] oop;
-	output otyp;
-	
-	reg [4:0] lastOp;
-	reg lastType;
-	reg signed `WORD lastIn1, lastIn2, lastPre;
-	reg `REGID lastReg1, lastReg2;
-	reg `TYPEDREG lastVal;
-	
-	assign oop = lastOp;
-	assign oreg1 = lastReg1;
-	assign oreg2 = lastReg2;
-	assign out1 = lastIn1;
-	assign out2 = lastIn2;
-	assign otyp = lastType;
-	assign outVal = lastVal;
-	assign outPre = lastPre;
-	
+module ALU0(outVal, out1, out2, oimm, oinst, rin1, rin2, iimm, iinst, iver, clk);
+	input signed `TYPEDREG rin1, rin2;
+	input `WORD iinst;
+	input iver;
+	input `TYPEDREG iimm;
+	input clk;
+	output signed `TYPEDREG out1, out2;
+	output reg `TYPEDREG outVal;
+	output `TYPEDREG oimm;
+	output `WORD oinst;
+
+	reg `OPcodeID op;
+	wire typ;
+	wire `REGNUM regNum;
+	wire `WORD in1, in2;
+
+	assign typ = rin2[16];
+	assign out1 = rin1;
+	assign out2 = rin2;
+	assign in1 = rin1`WORD;
+	assign in2 = rin2`WORD;
+	assign oimm = iimm;
+	assign oinst = iinst;
+	assign over = iver;
+
 	wire signed `WORD recr, addr, subr, shr, mulr, sltr;
 	wire signed `WORD outand, outor, outnot, outxor, outslt;
 	wire signed `WORD cvti, cvtf;
@@ -288,10 +238,7 @@ module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, opre, in1, in2, ireg1, 
 	assign outxor = in1 ^ in2;
 	assign outnot = ~in2;
 	assign outslt = in1 < in2;
-	//Instantiate the floating point modules.
 	fadd fa(addr, in1, in2);
-	//Use fadd with the negated version of in2.
-	//Negate by flipping the top bit of the float.
 	fadd fsu(subr, in1, {~in2[15], in2[14:0]});
 	fmul fm(mulr, in1, in2);
 	frecip fr(recr, in2);
@@ -299,97 +246,61 @@ module ALU0(outVal, out1, out2, oreg1, oreg2, oop, otyp, opre, in1, in2, ireg1, 
 	fslt fsl(sltr, in1, in2);
 	i2f icvt(cvti, in2);
 	f2i fcvt(cvtf, in2);
-	always @(posedge clk) begin #1
-		if (!stall) begin
-			case(iop)
-				`OPadd: begin
-					case(typ)
-						0: begin lastVal <= {typ, in1 + in2}; end
-						1: begin lastVal <= {typ, addr}; end
-					endcase
-				end
-				`OPsub: begin
-					case(typ)
-						0: begin lastVal <= {typ, in1 - in2}; end
-						1: begin lastVal <= {typ, subr}; end
-					endcase
-				end
-				`OPmul: begin
-					case(typ)
-						0: begin lastVal <= {typ, in1 * in2}; end
-						1: begin lastVal <= {typ, mulr}; end
-					endcase
-				end
-				`OPdiv: begin
-					case(typ)
-						0: begin lastVal <= {typ, in1 / in2}; end
-						1: begin lastVal <= {typ, recr}; end // Only perform the first half of the fp division here.
-					endcase
-				end
-				`OPand: begin lastVal <= {typ, outand}; end
-				`OPor:  begin lastVal <= {typ, outor}; end
-				`OPxor: begin lastVal <= {typ, outxor}; end
-				`OPnot: begin lastVal <= {typ, outnot}; end
-			//Positive indicates left shift.
-				`OPsh:  begin
-					case(typ)
-						0:  begin lastVal <= {typ, in1 << in2}; end
-						1:  begin lastVal <= {typ, shr}; end
-					endcase
-				end
-				`OPslt: begin
-					case(typ)
-						0:  begin lastVal <= {typ, outslt}; end
-						1:  begin lastVal <= {typ, sltr}; end
-					endcase
-				end
-				`OPcvt: begin
-					case(typ)
-						0:  begin lastVal <= {!typ, cvti}; end
-						1:  begin lastVal <= {!typ, cvtf}; end
-					endcase
-				end
-				`OPa2r: begin
-					lastVal <= {typ, in1};
-				end	
-				`OPr2a: begin
-					lastVal <= {typ, in2};
-				end
-				`OPcf8: begin
-					lastVal <= {1, pre, in2};
-				end
-				`OPci8: begin
-					lastVal <= {0, pre, in2};
-				end
-				`OPpre: begin
-					lastVal <= {0, in2};
-				end
-				`OPjp8: begin
-					lastVal <= {0, pre, in2};
-				end
-				`OPjr: begin
-					lastVal <= {0, pre, in2};
-				end
-				`OPjz8: begin
-					lastVal <= {typ, in2};
-				end
-				`OPjnz8: begin
-					if (in1 == 0) begin
-						
-					end
-					lastVal <= {typ, in2};
-				end
-				default: lastVal <= 17'b0;
-			endcase
-			
-			lastOp <= iop;
-			lastReg1 <= ireg1;
-			lastReg2 <= ireg2;
-			lastIn1 <= in1;
-			lastIn2 <= in2;
-			lastType <= typ;
-			lastPre <= ipre;
-		end
+	always @(posedge clk) begin
+		if (iver == 1'b0)
+			assign op = iinst`OPcode1;
+		else
+			assign op = iinst`OPcode2;
+		case(op)
+			`OPadd: begin
+				case(typ)
+					0: begin outVal <= {typ, in1 + in2}; end
+					1: begin outVal <= {typ, addr}; end
+				endcase
+			end
+			`OPsub: begin
+				case(typ)
+					0: begin outVal <= {typ, in1 - in2}; end
+					1: begin outVal <= {typ, subr}; end
+				endcase
+			end
+			`OPmul: begin
+				case(typ)
+					0: begin outVal <= {typ, in1 * in2}; end
+					1: begin outVal <= {typ, mulr}; end
+				endcase
+			end
+			`OPdiv: begin
+				case(typ)
+					0: begin outVal <= {typ, in1 / in2}; end
+					1: begin outVal <= {typ, recr}; end // Only perform the first half of the fp division here.
+				endcase
+			end
+			`OPand: begin outVal <= {typ, outand}; end
+			`OPor:  begin outVal <= {typ, outor}; end
+			`OPxor: begin outVal <= {typ, outxor}; end
+			`OPnot: begin outVal <= {typ, outnot}; end
+		//Positive indicates left shift.
+			`OPsh:  begin
+				case(typ)
+					0:  begin outVal <= {typ, in1 << in2}; end
+					1:  begin outVal <= {typ, shr}; end
+				endcase
+			end
+			`OPslt: begin
+				case(typ)
+					0:  begin outVal <= {typ, outslt}; end
+					1:  begin outVal <= {typ, sltr}; end
+				endcase
+			end
+			`OPcvt: begin
+				case(typ)
+					0:  begin outVal <= {!typ, cvti}; end
+					1:  begin outVal <= {!typ, cvtf}; end
+				endcase
+			end
+			default: outVal <= 17'b0;
+		endcase
 	end
 endmodule
 
@@ -410,61 +321,55 @@ endmodule
 // 		ireg2 is the second register used in the alu.
 // 		iop is the opcode of the instruction.
 // 		typ is the type of number used in the operation.
-module ALU1(outVal, out1, out2, oreg1, oreg2, oop, otyp, opre, inVal, in1, in2, ireg1, ireg2, iop, typ, stall, ipre);
-	input [4:0] iop;
-	input typ; //0->integer arithmetic, 1->floating point arithmetic
-	//$acc should always be in1 and $r should be in2.
-	input signed `WORD in1, in2, ipre;
-	input `REGID ireg1, ireg2;
-	input `TYPEDREG inVal;
-	output signed `WORD out1, out2, opre;
-	output `TYPEDREG outVal;
-	output `REGID oreg1, oreg2;	
-	output [4:0] oop;
-	output otyp;
-	
-	reg [4:0] lastOp;
-	reg lastType;
-	reg signed `WORD lastIn1, lastIn2, lastPre;
-	reg `REGID lastReg1, lastReg2;
-	reg `TYPEDREG lastVal;
-	
-	assign oop = lastOp;
-	assign oreg1 = lastReg1;
-	assign oreg2 = lastReg2;
-	assign out1 = lastIn1;
-	assign out2 = lastIn2;
-	assign otyp = lastType;
-	assign outVal = lastVal;
-	assign outPre = lastPre;
-	
+module ALU1(outVal, out1, out2, oimm, oinst, inVal, rin1, rin2, iimm, iinst, iver, clk);
+	input signed `TYPEDREG rin1, rin2;
+	input `WORD iinst;
+	input `TYPEDREG inVal, iimm;
+	input iver;
+	input clk;
+	output signed `TYPEDREG out1, out2;
+	output reg `TYPEDREG outVal;
+	output `TYPEDREG oimm;
+	output `WORD oinst;
+
+	reg `OPcodeID op;
+	wire typ;
+	wire `REGNUM regNum;
+	wire `WORD in1, in2;
+
+	assign typ = rin2[16];
+	assign out1 = rin1;
+	assign out2 = rin2;
+	assign in1 = rin1`WORD;
+	assign in2 = rin2`WORD;
+	assign oimm = iimm;
+	assign oinst = iinst;
+
 	wire signed `WORD divr;
 
-	fmul fd(divr, in1, inVal);
-	
-	always @(posedge clk) begin #1
-		if (!stall) begin
-			case(iop)
-				`OPdiv: begin
-					case(typ)
-						0: begin lastVal <= inVal; end
-						1: begin lastVal <= {typ, divr}; end
-					endcase
-				end
-				default: outVal <= inVal;
-			endcase
-			
-			lastOp <= iop;
-			lastReg1 <= ireg1;
-			lastReg2 <= ireg2;
-			lastIn1 <= in1;
-			lastIn2 <= in2;
-			lastType <= typ;
-			lastPre <= ipre;
-		end
+	fmul fd(divr, in1, inVal`WORD);
+	always @(posedge clk) begin
+		if (iver == 1'b0)
+			assign op = iinst`OPcode1;
+		else
+			assign op = iinst`OPcode2;
+		case(op)
+			`OPdiv: begin
+				case(typ)
+					0: begin outVal <= inVal; end
+					1: begin outVal <= {typ, divr}; end
+				endcase
+			end
+			`OPlf: begin
+				outVal[15] <= 1'b1;
+			end	
+			`OPli: begin
+				outVal[15] <= 1'b0;
+			end	
+			default: outVal <= inVal;
+		endcase
 	end
 endmodule
-
 
 module tacky_processor(halt, reset, clk);
 
@@ -482,36 +387,30 @@ reg `WORD ins_to_ALUMEM;
 reg `WORD data_mem `MEMSIZE;
 reg `WORD ins_to_ALU2;
 reg `TYPEDREG data1_to_ALU2, data2_to_ALU2, imm_to_ALU2;
+reg `TYPEDREG r0_to_ALU2, r1_to_ALU2, r2_to_ALU2, r3_to_ALU2;
 
-wire `TYPEDREG memoutVal, alu0_0outVal, alu1_0outVal, alu0_1outVal, alu1_1outVal;
-wire `WORD memout1, alu0_0out1, alu1_0out1, alu0_1out1, alu1_1out1;
-wire `WORD memout2, alu0_0out2, alu1_0out2, alu0_1out2, alu1_1out2;
-wire `REGNUM memoreg1, alu0_0oreg1, alu1_0oreg1, alu0_1oreg1, alu1_1oreg1;
-wire `REGNUM memoreg2, alu0_0oreg2, alu1_0oreg2, alu0_1oreg2, alu1_1oreg2;
-wire [5:0] memoop, alu0_0oop, alu1_0oop, alu0_1oop, alu1_1oop;
-wire alu0_0otyp, alu1_0otyp, alu0_1otyp, alu1_1otyp;
-wire `WORD alu0_0opre, alu1_0opre, alu0_1opre, alu1_1opre;
+wire `TYPEDREG alu0_0outVal, alu1_0outVal, alu0_1outVal, alu1_1outVal;
+wire `TYPEDREG alu0_0out1, alu1_0out1, alu0_1out1, alu1_1out1;
+wire `TYPEDREG alu0_0out2, alu1_0out2, alu0_1out2, alu1_1out2;
+wire `TYPEDREG alu0_0oimm, alu1_0oimm, alu0_1oimm, alu1_1oimm;
+wire `WORD alu0_0oinst, alu1_0oinst, alu0_1oinst, alu1_1oinst;
 wire `TYPEDREG alu1_0inVal, alu1_1inVal;
-wire `WORD memin1, alu0_0in1, alu1_0in1, alu0_1in1, alu1_1in1;
-wire `WORD memin2, alu0_0in2, alu1_0in2, alu0_1in2, alu1_1in2;
-wire `REGNUM memireg1, alu0_0ireg1, alu1_0ireg1, alu0_1ireg1, alu1_1ireg1;
-wire `REGNUM memireg2, alu0_0ireg2, alu1_0ireg2, alu0_1ireg2, alu1_1ireg2;
-wire [5:0] memiop, alu0_0iop, alu1_0iop, alu0_1iop, alu1_1iop;
-wire alu0_0typ, alu1_0typ, alu0_1typ, alu1_1typ;
-wire memstall, alu0_0stall, alu1_0stall, alu0_1stall, alu1_1stall;
-wire `WORD alu0_0ipre, alu1_0ipre, alu0_1ipre, alu1_1ipre;
+wire `TYPEDREG alu0_0in1, alu1_0in1, alu0_1in1, alu1_1in1;
+wire `TYPEDREG alu0_0in2, alu1_0in2, alu0_1in2, alu1_1in2;
+wire `TYPEDREG alu0_0iimm, alu1_0iimm, alu0_1iimm, alu1_1iimm;
+wire `WORD alu0_0iinst, alu1_0iinst, alu0_1iinst, alu1_1iinst;
 
-MemHandler memHandler(memoutVal, memout1, memout2, memoreg1, memoreg2, memoop, memin1, memin2, memireg1, memireg2, memiop, memstall);
-ALU0 alu0_0(alu0_0outVal, alu0_0out1, alu0_0out2, alu0_0oreg1, alu0_0oreg2, alu0_0oop, alu0_0otyp, alu0_0opre, alu0_0in1, alu0_0in2, alu0_0ireg1, alu0_0ireg2, alu0_0iop, alu0_0typ, alu0_0stall, alu0_0ipre);
-ALU1 alu1_0(alu1_0outVal, alu1_0out1, alu1_0out2, alu1_0oreg1, alu1_0oreg2, alu1_0oop, alu1_0otyp, alu1_0opre, alu1_0inVal, alu1_0in1, alu1_0in2, alu1_0ireg1, alu1_0ireg2, alu1_0iop, alu1_0typ, alu1_0stall, alu1_0ipre);
-ALU0 alu0_1(alu0_1outVal, alu0_1out1, alu0_1out2, alu0_1oreg1, alu0_1oreg2, alu0_1oop, alu0_1otyp, alu0_1opre, alu0_1in1, alu0_1in2, alu0_1ireg1, alu0_1ireg2, alu0_1iop, alu0_1typ, alu0_1stall, alu0_1ipre);
-ALU1 alu1_1(alu1_1outVal, alu1_1out1, alu1_1out2, alu1_1oreg1, alu1_1oreg2, alu1_1oop, alu1_1otyp, alu1_1opre, alu1_1inVal, alu1_1in1, alu1_1in2, alu1_1ireg1, alu1_1ireg2, alu1_1iop, alu1_1typ, alu1_1stall, alu1_1ipre);
-
+ALU0 alu0_0(alu0_0outVal, alu0_0out1, alu0_0out2, alu0_0oimm, alu0_0oinst, alu0_0in1, alu0_0in2, alu0_0iimm, alu0_0iinst, 1'b0, clk);
+ALU0 alu0_1(alu0_1outVal, alu0_1out1, alu0_1out2, alu0_1oimm, alu0_1oinst, alu0_1in1, alu0_1in2, alu0_1iimm, alu0_1iinst, 1'b1, clk);
 
 //stage 3 regs
 reg `WORD ins_to_WB;
 reg `TYPEDREG data1_to_WB, data2_to_WB, imm_to_WB;
 reg `TYPEDREG ALU1_result, ALU2_result;
+	
+ALU1 alu1_0(alu1_0outVal, alu1_0out1, alu1_0out2, alu1_0oimm, alu1_0oinst, alu1_0inVal, alu1_0in1, alu1_0in2, alu1_0iimm, alu1_0iinst, 1'b0, clk);
+ALU1 alu1_1(alu1_1outVal, alu1_1out1, alu1_1out2, alu1_1oimm, alu1_1oinst, alu1_1inVal, alu1_1in1, alu1_1in2, alu1_1iimm, alu1_1iinst, 1'b1, clk);
+
 
 //stage 4 regs
 reg `TYPEDREG reg1_load_val, reg2_load_val;
@@ -550,20 +449,70 @@ end
 
 //stage 2: ALU/MEM
 
-ins_to_ALU2 <= ins_to_ALUMEM;
-imm_to_ALU2 <= imm_to_ALUMEM;
-//data1_to_ALU2 <= ;
-//data2_to_ALU2 <= ;
+assign alu0_0iinst = ins_to_ALUMEM;
+assign alu0_1iinst = ins_to_ALUMEM;
+assign alu0_0in1 = acc0_val;
+assign alu0_0in2 = r1_val;
+assign alu0_1in1 = acc1_val;
+assign alu0_1in2 = r2_val;
+assign alu0_0iimm = imm_to_ALUMEM;
+assign alu0_1iimm = imm_to_ALUMEM;
 
-
+always@(posedge clk) begin
+	ins_to_ALU2 <= alu0_0oinst;
+	imm_to_ALU2 <= alu0_0oimm;
+	r0_to_ALU2 <= alu0_0out1;
+	r1_to_ALU2 <= alu0_0out2;
+	r2_to_ALU2 <= alu0_1out1;
+	r3_to_ALU2 <= alu0_1out2;
+	
+	case (alu0_0iinst`OPcode1)
+		`OPlf: begin
+			data1_to_ALU2 <= data_mem[alu0_0out1];
+		end	
+		`OPli: begin
+			data1_to_ALU2 <= data_mem[alu0_0out1];
+		end	
+		`OPst: begin
+			data_mem[alu0_0out2] <= alu0_0out1;
+			data1_to_ALU2 <= 17'b0;
+		end
+		default: data1_to_ALU2 <= alu0_0outVal;
+	endcase
+	
+	case (alu0_0iinst`OPcode2)
+		`OPlf: begin
+			data2_to_ALU2 <= data_mem[alu0_1out1];
+		end	
+		`OPli: begin
+			data2_to_ALU2 <= data_mem[alu0_1out1];
+		end	
+		`OPst: begin
+			data_mem[alu0_1out2] <= alu0_1out1;
+			data1_to_ALU2 <= 17'b0;
+		end
+		default: data2_to_ALU2 <= alu0_1outVal;
+	endcase
+end
 
 //stage 3: ALU2
-always@(posedge clk) begin
 
-    ins_to_WB <= ins_to_ALU2;
-    imm_to_WB <= imm_to_ALU2;
-    data1_to_WB <= data1_to_ALU2;
-    data2_to_WB <= data2_to_ALU2;
+assign alu1_0iinst = ins_to_ALU2;
+assign alu1_1iinst = ins_to_ALU2;
+assign alu1_0in1 = r0_to_ALU2;
+assign alu1_0in2 = r1_to_ALU2;
+assign alu1_1in1 = r2_to_ALU2;
+assign alu1_1in2 = r3_to_ALU2;
+assign alu1_0iimm = imm_to_ALU2;
+assign alu1_1iimm = imm_to_ALU2;
+assign alu1_0inVal = data1_to_ALU2;
+assign alu1_1inVal = data2_to_ALU2;
+
+always@(posedge clk) begin
+    ins_to_WB <= alu1_0oinst;
+    imm_to_WB <= alu1_0oimm;
+    data1_to_WB <= alu1_0outVal;
+    data2_to_WB <= alu1_1outVal;
 end
 
 //stage 4: writeback
