@@ -188,20 +188,27 @@ assign i = (tiny ? 0 : (big ? 32767 : (f `FSIGN ? (-ui) : ui)));
 endmodule
 
 //Identifies which registers and accumulators are read from, if any
-module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_JumpFlag, RR_inst);
+module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_JumpFlag, RR_SysFlag RR_inst);
 	output wire [3:0] Field1_ACC0;
 	output wire [3:0] Field1_REG1;
 	output wire [3:0] Field2_ACC1;
 	output wire [3:0] Field2_REG2;
 	output RR_JumpFlag;
+	output RR_SysFlag;
 	
 	input `WORD RR_inst;
 	
-	if ((RR_inst `OPcode1 == `OPjz8) || (RR_inst `OPcode1 == `OPjnz8) || (RR_inst `OPcode1 == `OPjr) || (RR_inst `OPcode1 == `OPjp8) || (RR_inst `OPcode2 == `OPjr)) begin  
+	if (RR_inst `OPcode1 == `OPsys) begin
+		assign RR_SysFlag = `true
+		assign RR_JumpFlag = `false;
+	end
+	else if ((RR_inst `OPcode1 == `OPjz8) || (RR_inst `OPcode1 == `OPjnz8) || (RR_inst `OPcode1 == `OPjr) || (RR_inst `OPcode1 == `OPjp8) || (RR_inst `OPcode2 == `OPjr)) begin  
 		assign RR_JumpFlag = `true;
+		assign RR_SysFlag = `false;
 	end
 	else begin
 		assign RR_JumpFlag = `false;
+		assign RR_SysFlag = `false;
 		//if the first opcode is a register reader, assign the appropriate register to Field1_REG1
 		if ((RR_inst `OPcode1 == `OPst) || (RR_inst `OPcode1 == `OPcvt) || (RR_inst `OPcode1 == `OPr2a) || (RR_inst `OPcode1 == `OPsh) || (RR_inst `OPcode1 == `OPslt) || (RR_inst `OPcode1 == `OPadd) || (RR_inst `OPcode1 == `OPsub) || (RR_inst `OPcode1 == `OPdiv) || (RR_inst `OPcode1 == `OPmul) || (RR_inst `OPcode1 == `OPnot) || (RR_inst `OPcode1 == `OPxor) || (RR_inst `OPcode1 == `OPand) || (RR_inst `OPcode1 == `OPor)) begin
 			
@@ -536,9 +543,10 @@ reg jump_flag;
 reg `WORD pc_next;
 
 wire IF_JumpFlag;
+wire IF_SysFlag;
 
 //Determines which registers are being read from in stage 0 (1111 if not read from)
-RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, IF_JumpFlag, instruction);
+RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, IF_JumpFlag, IF_SysFlag, instruction);
 //Determines which registers are being written to in stage 1 (1110 if not written to)
 RegistersWrittenTo RegsWritten1(W1_ACC0, W1_REG1, W1_ACC1, W1_REG2, ins_to_ALUMEM);
 //Determines which registers are being written to in stage 2 (1110 if not written to)
@@ -596,8 +604,12 @@ always@(posedge clk) begin
     instruction <= instruction[pc];
     pc_inc <= pc + 1; 
 	
-    //If a jump, pad NOPs until jump is gone
-    if (IF_JumpFlag == `true) begin
+    //If a sys call, make sure everything finishes by padding with NOPs
+    if (IF_SysFlag == `true) begin
+	NOPs = 200000;
+    end
+	//If a jump, pad NOPs until jump is gone
+    else if (IF_JumpFlag == `true) begin
 	NOPs = 4;
     end
     //Else, check for dependencies
