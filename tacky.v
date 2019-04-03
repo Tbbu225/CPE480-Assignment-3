@@ -337,9 +337,10 @@ module ALU0(outVal, out1, out2, oimm, oinst, rin1, rin2, iimm, iinst, iver, clk)
 	assign oinst = iinst;
 	assign over = iver;
 
-	wire signed `WORD recr, addr, subr, shr, mulr, sltr;
+	wire signed `WORD recr, addr, subr, shr, mulr;
 	wire signed `WORD outand, outor, outnot, outxor, outslt;
 	wire signed `WORD cvti, cvtf;
+	wire signed sltr;
 
 	//Assign the bitwise operations.
 	assign outand = in1 & in2;
@@ -399,7 +400,7 @@ module ALU0(outVal, out1, out2, oimm, oinst, rin1, rin2, iimm, iinst, iver, clk)
 			`OPslt: begin
 				case(typ)
 					0:  begin outVal <= {typ, outslt}; end
-					1:  begin outVal <= {typ, sltr}; end
+					1:  begin outVal <= {typ, 15'b0, sltr}; end
 				endcase
 			end
 			`OPcvt: begin
