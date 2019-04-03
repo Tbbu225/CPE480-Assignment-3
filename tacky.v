@@ -188,7 +188,7 @@ assign i = (tiny ? 0 : (big ? 32767 : (f `FSIGN ? (-ui) : ui)));
 endmodule
 
 //Identifies which registers and accumulators are read from, if any
-module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_JumpFlag, RR_SysFlag RR_inst);
+module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_JumpFlag, RR_SysFlag, RR_inst);
 	output wire [3:0] Field1_ACC0;
 	output wire [3:0] Field1_REG1;
 	output wire [3:0] Field2_ACC1;
