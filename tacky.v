@@ -857,7 +857,7 @@ initial begin
 end
 
 initial begin
-    #(10**10) $finish;
+	#(10**4) $finish;
 end
 
 endmodule
