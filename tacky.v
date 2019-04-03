@@ -520,10 +520,19 @@ reg `TYPEDREG ALU1_result, ALU2_result;
 ALU1 alu1_0(alu1_0outVal, alu1_0out1, alu1_0out2, alu1_0oimm, alu1_0oinst, alu1_0inVal, alu1_0in1, alu1_0in2, alu1_0iimm, alu1_0iinst, 1'b0, clk);
 ALU1 alu1_1(alu1_1outVal, alu1_1out1, alu1_1out2, alu1_1oimm, alu1_1oinst, alu1_1inVal, alu1_1in1, alu1_1in2, alu1_1iimm, alu1_1iinst, 1'b1, clk);
 
-
 //stage 4 regs
 reg jump_flag;
 reg `WORD pc_next;
+
+//Determines which registers are being read from in stage 0 (1111 if not read from)
+RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, instruction);
+//Determines which registers are being written to in stage 1 (1110 if not written to)
+RegistersWrittenTo RegsWritten1(W1_ACC0, W1_REG1, W1_ACC1, W1_REG2, ins_to_ALUMEM);
+//Determines which registers are being written to in stage 2 (1110 if not written to)
+RegistersWrittenTo RegsWritten2(W2_ACC0, W2_REG1, W2_ACC1, W2_REG2, ins_to_ALU2);
+//Determines which registers are being written to in stage 3 (1110 if not written to)
+RegistersWrittenTo RegsWritten3(W3_ACC0, W3_REG1, W3_ACC1, W3_REG2, ins_to_WB);
+
 
 //Registers read from in stage 0
 wire [3:0] R_ACC0;
@@ -570,9 +579,6 @@ always@(posedge clk) begin
     instruction <= instruction[pc];
     pc_inc <= pc + 1; 
 	
-    //Determines which registers are being read from in stage 0 (1111 if not read from)
-    RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, instruction);
-
     //Checks for dependencies on accumulator 0
     RT_ACC0 <= R_ACC0;
     case (RT_ACC0)
@@ -635,8 +641,6 @@ always@(posedge clk) begin
     r2_val <= regfile`REG2;
     ins_to_ALUMEM <= instruction;
 	
-    //Determines which registers are being written to in stage 1 (1110 if not written to)
-    RegistersWrittenTo RegsWritten1(W1_ACC0, W1_REG1, W1_ACC1, W1_REG2, ins_to_ALUMEM)
 end
 
 //stage 2: ALU/MEM
@@ -657,9 +661,6 @@ always@(posedge clk) begin
 	r1_to_ALU2 <= alu0_0out2;
 	r2_to_ALU2 <= alu0_1out1;
 	r3_to_ALU2 <= alu0_1out2;
-	
-	//Determines which registers are being written to in stage 2 (1110 if not written to)
-        RegistersWrittenTo RegsWritten2(W2_ACC0, W2_REG1, W2_ACC1, W2_REG2, ins_to_ALU2)
 	
 	case (alu0_0iinst`OPcode1)
 		`OPlf: begin
@@ -709,8 +710,6 @@ always@(posedge clk) begin
     data1_to_WB <= alu1_0outVal;
     data2_to_WB <= alu1_1outVal;
 
-    //Determines which registers are being written to in stage 3 (1110 if not written to)
-    RegistersWrittenTo RegsWritten3(W3_ACC0, W3_REG1, W3_ACC1, W3_REG2, ins_to_WB)
 end
 
 //stage 4: writeback
