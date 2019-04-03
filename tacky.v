@@ -553,7 +553,7 @@ wire [3:0] W3_REG2;
 reg [4:0] RT_ACC0, RT_REG1, RT_ACC1, RT_REG2;
 
 //NOPs needed to avoid dependency
-reg [1:0] NOPs;
+reg [1:0] NOPs, NOP_timer;
 
 always@(posedge reset) begin
     $readmemh0(regfile);
@@ -565,7 +565,7 @@ end
 //stage 0: instruction fetch
 always@(posedge clk) begin
     if(NOPs == 0) begin
-        pc <= (jump_flag) ? pc_next : pc_inc + 1;
+        pc <= (jump_flag) ? pc_next : pc_inc;
     end
     instruction <= instruction[pc];
     pc_inc <= pc + 1; 
@@ -626,14 +626,21 @@ end
 
 //stage 1: register read
 always@(posedge clk) begin
-    if(instruction `OPcode1 == `OPpre) pre <= instruction `IMM8;
-    if(instruction `OPcode1 == `OPcf8) imm_to_ALUMEM <= {`Float, pre, instruction `IMM8};
-    if(instruction `OPcode1 == `OPci8 || (instruction `OPcode1 >= `OPjp8 && instruction `OPcode1 <= `OPjnz8) ) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
-    acc0_val <= regfile[0];
-    acc1_val <= regfile[1];
-    r1_val <= regfile`REG1;
-    r2_val <= regfile`REG2;
-    ins_to_ALUMEM <= instruction;
+    NOP_timer <= (NOPs > 0) ? NOPs : 2'b0;
+    if(NOP_timer > 0) begin
+        ins_to_ALUMEM <= {`OPno, `Acc0, `OPno, `Acc1 };
+        NOP_timer <= NOP_timer - 1; 
+    end
+    else begin
+        if(instruction `OPcode1 == `OPpre) pre <= instruction `IMM8;
+        if(instruction `OPcode1 == `OPcf8) imm_to_ALUMEM <= {`Float, pre, instruction `IMM8};
+        if(instruction `OPcode1 == `OPci8 || (instruction `OPcode1 >= `OPjp8 && instruction `OPcode1 <= `OPjnz8) ) imm_to_ALUMEM <= {`Int, pre, instruction `IMM8};
+        acc0_val <= regfile[0];
+        acc1_val <= regfile[1];
+        r1_val <= regfile`REG1;
+        r2_val <= regfile`REG2;
+        ins_to_ALUMEM <= instruction;
+    end
 	
     //Determines which registers are being written to in stage 1 (1110 if not written to)
     RegistersWrittenTo RegsWritten1(W1_ACC0, W1_REG1, W1_ACC1, W1_REG2, ins_to_ALUMEM)
