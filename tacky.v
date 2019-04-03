@@ -602,7 +602,7 @@ always@(posedge clk) begin
     if(NOP_timer == 0) begin
         pc <= (jump_flag) ? pc_next : pc_inc;
     end
-    instruction <= instruction[pc];
+    instruction <= instruction_mem[pc];
     pc_inc <= pc + 1; 
 	
     //If a sys call, make sure everything finishes by padding with NOPs
@@ -846,7 +846,7 @@ tacky_processor PE(halted, reset, clk);
 
 initial begin
   $dumpfile;
-  $dumpvars(1, PE.pc);
+  $dumpvars(0, PE);
   #10 reset = 1;
   #10 reset = 0;
   while (!halted) begin
