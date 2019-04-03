@@ -563,10 +563,6 @@ wire [3:0] W3_REG1;
 wire [3:0] W3_ACC1;
 wire [3:0] W3_REG2;
 
-//Commit check
-//Temporary regs for read reg values
-reg [4:0] RT_ACC0, RT_REG1, RT_ACC1, RT_REG2;
-
 //NOPs needed to avoid dependency
 reg [1:0] NOPs;
 
@@ -586,53 +582,54 @@ always@(posedge clk) begin
     pc_inc <= pc + 1; 
 	
     //Checks for dependencies on accumulator 0
-    RT_ACC0 <= R_ACC0;
-    case (RT_ACC0)
-	    W1_ACC0 : NOPs <= 4;
-	    W2_ACC0 : NOPs <= 3;
-	    W3_ACC0 : NOPs <= 2;
+	if (R_ACC0 == W1_ACC0) begin
+    case (R_ACC0)
+	W1_ACC0 : NOPs = 4;
+	W2_ACC0 : NOPs = 3;
+	W3_ACC0 : NOPs = 2;
+	default : NOPs = 0;
     endcase
 
     //Checks for dependencies on accumulator 1
-    RT_ACC1 <= R_ACC1;
-    case (RT_ACC1)
-	    W1_ACC1 : NOPs <= 4;
-	    W2_ACC1 : NOPs <= 3;
-	    W3_ACC1 : NOPs <= 2;
+    case (R_ACC1)
+	W1_ACC1 : NOPs = 4;
+	W2_ACC1 : NOPs = 3;
+	W3_ACC1 : NOPs = 2;
+        default : NOPs = 0;
     endcase
 
     //Checks for dependencies on reg 1 
-    RT_REG1 <= R_REG1;
-    case (RT_REG1)
-	W1_ACC0 : NOPs <= 4;
-    W1_ACC1 : NOPs <= 4;
-	W1_REG1 : NOPs <= 4;
-	W1_REG2 : NOPs <= 4;
-	W2_ACC0 : NOPs <= 3;
-	W2_ACC1 : NOPs <= 3;
-	W2_REG1 : NOPs <= 3;
-	W2_REG2 : NOPs <= 3;
-	W3_ACC0 : NOPs <= 2;
-	W3_ACC1 : NOPs <= 2;
-	W3_REG1 : NOPs <= 2;
-	W3_REG2 : NOPs <= 2;	
+    case (R_REG1)
+	W1_ACC0 : NOPs = 4;
+	W1_ACC1 : NOPs = 4;
+	W1_REG1 : NOPs = 4;
+	W1_REG2 : NOPs = 4;
+	W2_ACC0 : NOPs = 3;
+	W2_ACC1 : NOPs = 3;
+	W2_REG1 : NOPs = 3;
+	W2_REG2 : NOPs = 3;
+	W3_ACC0 : NOPs = 2;
+	W3_ACC1 : NOPs = 2;
+	W3_REG1 : NOPs = 2;
+	W3_REG2 : NOPs = 2;
+	default : NOPs = 0;	
     endcase
 
     //Checks for dependencies on reg 2 
-    RT_REG2 <= R_REG2;
-    case (RT_REG2)
-	W1_ACC0 : NOPs <= 4;
-	W1_ACC1 : NOPs <= 4;
-	W1_REG1 : NOPs <= 4;
-	W1_REG2 : NOPs <= 4;
-	W2_ACC0 : NOPs <= 3;
-	W2_ACC1 : NOPs <= 3;
-	W2_REG1 : NOPs <= 3;
-	W2_REG2 : NOPs <= 3;
-	W3_ACC0 : NOPs <= 2;
-	W3_ACC1 : NOPs <= 2;
-	W3_REG1 : NOPs <= 2;
-	W3_REG2 : NOPs <= 2;	
+    case (R_REG2)
+	W1_ACC0 : NOPs = 4;
+	W1_ACC1 : NOPs = 4;
+	W1_REG1 : NOPs = 4;
+	W1_REG2 : NOPs = 4;
+	W2_ACC0 : NOPs = 3;
+	W2_ACC1 : NOPs = 3;
+	W2_REG1 : NOPs = 3;
+	W2_REG2 : NOPs = 3;
+	W3_ACC0 : NOPs = 2;
+	W3_ACC1 : NOPs = 2;
+	W3_REG1 : NOPs = 2;
+	W3_REG2 : NOPs = 2;
+	default : NOPs = 0;	
     endcase
 end
 
@@ -715,7 +712,6 @@ always@(posedge clk) begin
     imm_to_WB <= alu1_0oimm;
     data1_to_WB <= alu1_0outVal;
     data2_to_WB <= alu1_1outVal;
-
 end
 
 //stage 4: writeback
@@ -776,9 +772,6 @@ always@(posedge clk) begin
     end
     else begin
         jump_flag <= `false;
-    end
-    
-
+    end 
 end
-
 endmodule
