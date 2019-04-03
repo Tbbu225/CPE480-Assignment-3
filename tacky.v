@@ -575,7 +575,7 @@ end
 
 //stage 0: instruction fetch
 always@(posedge clk) begin
-    if(NOPs == 0) begin
+    if(NOP_timer == 0) begin
         pc <= (jump_flag) ? pc_next : pc_inc;
     end
     instruction <= instruction[pc];
@@ -780,4 +780,29 @@ always@(posedge clk) begin
         jump_flag <= `false;
     end 
 end
+endmodule
+
+module testbench;
+reg reset = 0;
+reg clk = 0;
+wire halted;
+
+tacky_processor PE(halted, reset, clk);
+
+initial begin
+  $dumpfile;
+  $dumpvars(0, PE);
+  #10 reset = 1;
+  #10 reset = 0;
+  while (!halted) begin
+    #1 clk = 1;
+    #1 clk = 0;
+  end
+  $finish;
+end
+
+initial begin
+    #(10**10) $finish;
+end
+
 endmodule
