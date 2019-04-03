@@ -496,7 +496,7 @@ endmodule
 
 module tacky_processor(halt, reset, clk);
 
-input halt;
+output reg halt;
 input reset;
 input clk;
 
@@ -845,7 +845,7 @@ tacky_processor PE(halted, reset, clk);
 
 initial begin
   $dumpfile;
-  $dumpvars(0, PE);
+  $dumpvars(1, PE.pc);
   #10 reset = 1;
   #10 reset = 0;
   while (!halted) begin
