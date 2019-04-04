@@ -786,8 +786,8 @@ assign alu1_1inVal = data2_to_ALU2;
 always@(posedge clk) begin
     ins_to_WB <= alu1_0oinst;
     imm_to_WB <= alu1_0oimm;
-    //data1_to_WB <= alu1_0outVal;
-    //data2_to_WB <= alu1_1outVal;
+    data1_to_WB <= alu1_0outVal;
+    data2_to_WB <= alu1_1outVal;
 	ALU1_result <= alu1_0outVal;
 	ALU2_result <= alu1_1outVal;
 end
