@@ -376,66 +376,66 @@ module ALU0(outVal, out1, out2, oimm, oinst, rin1, rin2, iimm, iinst, iver, clk)
 	fslt fsl(sltr, in1, in2);
 	i2f icvt(cvti, in2);
 	f2i fcvt(cvtf, in2);
-	always @(posedge clk) begin
+	always @(*) begin
 		if (iver == 1'b0)
-			assign op = iinst`OPcode1;
+			op = iinst`OPcode1;
 		else
-			assign op = iinst`OPcode2;
+			op = iinst`OPcode2;
 		case(op)
 			`OPadd: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 + in2}; end
-					1: begin outVal <= {typ, addr}; end
+					0: begin outVal = {typ, in1 + in2}; end
+					1: begin outVal = {typ, addr}; end
 				endcase
 			end
 			`OPsub: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 - in2}; end
-					1: begin outVal <= {typ, subr}; end
+					0: begin outVal = {typ, in1 - in2}; end
+					1: begin outVal = {typ, subr}; end
 				endcase
 			end
 			`OPmul: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 * in2}; end
-					1: begin outVal <= {typ, mulr}; end
+					0: begin outVal = {typ, in1 * in2}; end
+					1: begin outVal = {typ, mulr}; end
 				endcase
 			end
 			`OPdiv: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 / in2}; end
-					1: begin outVal <= {typ, recr}; end // Only perform the first half of the fp division here.
+					0: begin outVal = {typ, in1 / in2}; end
+					1: begin outVal = {typ, recr}; end // Only perform the first half of the fp division here.
 				endcase
 			end
-			`OPand: begin outVal <= {typ, outand}; end
-			`OPor:  begin outVal <= {typ, outor}; end
-			`OPxor: begin outVal <= {typ, outxor}; end
-			`OPnot: begin outVal <= {typ, outnot}; end
+			`OPand: begin outVal = {typ, outand}; end
+			`OPor:  begin outVal = {typ, outor}; end
+			`OPxor: begin outVal = {typ, outxor}; end
+			`OPnot: begin outVal = {typ, outnot}; end
 		//Positive indicates left shift.
 			`OPsh:  begin
 				case(typ)
-					0:  begin outVal <= {typ, in1 << in2}; end
-					1:  begin outVal <= {typ, shr}; end
+					0:  begin outVal = {typ, in1 << in2}; end
+					1:  begin outVal = {typ, shr}; end
 				endcase
 			end
 			`OPslt: begin
 				case(typ)
-					0:  begin outVal <= {typ, outslt}; end
-					1:  begin outVal <= {typ, 15'b0, sltr}; end
+					0:  begin outVal = {typ, outslt}; end
+					1:  begin outVal = {typ, 15'b0, sltr}; end
 				endcase
 			end
 			`OPcvt: begin
 				case(typ)
-					0:  begin outVal <= {!typ, cvti}; end
-					1:  begin outVal <= {!typ, cvtf}; end
+					0:  begin outVal = {!typ, cvti}; end
+					1:  begin outVal = {!typ, cvtf}; end
 				endcase
 			end
 			`OPjz8: begin
-				outVal <= {0'b0, in2};
+				outVal = {0'b0, in2};
 			end
 			`OPjnz8: begin
-				outVal <= {0'b0, in2};
+				outVal = {0'b0, in2};
 			end
-			default: outVal <= 17'b0;
+			default: outVal = 17'b0;
 		endcase
 	end
 endmodule
@@ -484,25 +484,25 @@ module ALU1(outVal, out1, out2, oimm, oinst, inVal, rin1, rin2, iimm, iinst, ive
 	wire signed `WORD divr;
 
 	fmul fd(divr, in1, inVal`WORD);
-	always @(posedge clk) begin
+	always @(*) begin
 		if (iver == 1'b0)
-			assign op = iinst`OPcode1;
+			op = iinst`OPcode1;
 		else
-			assign op = iinst`OPcode2;
+			op = iinst`OPcode2;
 		case(op)
 			`OPdiv: begin
 				case(typ)
-					0: begin outVal <= inVal; end
-					1: begin outVal <= {typ, divr}; end
+					0: begin outVal = inVal; end
+					1: begin outVal = {typ, divr}; end
 				endcase
 			end
 			`OPlf: begin
-				outVal[15] <= 1'b1;
+				outVal[15] = 1'b1;
 			end	
 			`OPli: begin
-				outVal[15] <= 1'b0;
+				outVal[15] = 1'b0;
 			end	
-			default: outVal <= inVal;
+			default: outVal = inVal;
 		endcase
 	end
 endmodule
@@ -594,13 +594,13 @@ wire [3:0] W3_REG2;
 
 //NOPs needed to avoid dependency
 //NOPs needed to avoid dependency
-reg [1:0] NOPs_win1;
-reg [1:0] NOPs_win2;
-reg [1:0] NOPs1;
-reg [1:0] NOPs2;
-reg [1:0] NOPs3;
-reg [1:0] NOPs4;
-reg [1:0] NOPs, NOP_timer;
+reg [2:0] NOPs_win1;
+reg [2:0] NOPs_win2;
+reg [2:0] NOPs1;
+reg [2:0] NOPs2;
+reg [2:0] NOPs3;
+reg [2:0] NOPs4;
+reg [2:0] NOPs, NOP_timer;
 
 always@(posedge reset) begin
     $readmemh0(regfile);
@@ -609,6 +609,7 @@ always@(posedge reset) begin
     pc <= 0;
     halt <= 0;
     pre <= 0;
+	NOPs <= 0;
 end
 
 //stage 0: instruction fetch
@@ -621,12 +622,13 @@ always@(posedge clk) begin
 	
     //If a sys call, make sure everything finishes by padding with NOPs
     if (IF_SysFlag == `true) begin
-	$display("nop");
-	NOPs = 200000;
+		$display("sys-nop");
+		NOPs = 6;
     end
 	//If a jump, pad NOPs until jump is gone
     else if (IF_JumpFlag == `true) begin
-	NOPs = 4;
+		$display("jump-nop");
+		NOPs = 7;
     end
     //Else, check for dependencies
     else begin 
@@ -800,6 +802,10 @@ always@(posedge clk) begin
     //reg1_load <= ins_to_WB `REG1
     //reg2_load <= ins_to_WB `REG2
     
+    if(ins_to_WB `OPcode1 == `OPsys) begin
+        halt = 1'b1;
+    end
+
     //First instruction logic WB
     if(ins_to_WB `OPcode1 >= `OPsh || ins_to_WB `OPcode1 == `OPr2a) begin
         regfile `Acc0 <= ALU1_result;
@@ -863,17 +869,18 @@ tacky_processor PE(halted, reset, clk);
 
 initial begin
   $dumpfile;
-  //$dumpvars(1, PE.halt, PE.pre, PE.pc, PE.pc_next, PE.pc_inc, PE.jump_flag, PE.IF_JumpFlag, PE.NOPs, PE.instruction, PE.ins_to_ALUMEM, PE.ins_to_ALU2, PE.ins_to_WB, PE.acc0_val, PE.acc1_val, PE.r1_val, PE.r2_val, PE.imm_to_ALUMEM);
-  $dumpvars(1, PE.halt);
-  $dumpvars(2, PE.RegsRead.RR_inst, PE.RegsRead.RR_JumpFlag, PE.RegsRead.RR_SysFlag);
+  $dumpvars(1, PE.halt, PE.NOPs, PE.pre, PE.pc, PE.pc_next, PE.jump_flag, PE.instruction, PE.ins_to_ALUMEM, PE.ins_to_ALU2, PE.ins_to_WB, PE.imm_to_ALUMEM, PE.alu0_0outVal, PE.alu1_0outVal, PE.ALU1_result);
+  $dumpvars(2, PE.alu0_0.op, PE.alu0_0.outVal);
+  //$dumpvars(1, PE.halt, PE.NOPs);
+  //$dumpvars(2, PE.RegsRead.RR_inst, PE.RegsRead.RR_JumpFlag, PE.RegsRead.RR_SysFlag);
   //$dumpvars(2, PE.alu0_0.outVal, PE.alu0_0.out1, PE.alu0_0.out2, PE.alu0_0.oimm, PE.alu0_0.oinst, PE.alu0_0.rin1,  PE.alu0_0.rin2,  PE.alu0_0.iimm,  PE.alu0_0.iinst,  PE.alu0_0.iver,  PE.alu0_0.clk); 
   //$dumpvars(2, PE.alu1_0.outVal, PE.alu1_0.out1, PE.alu1_0.out2, PE.alu1_0.oimm, PE.alu1_0.oinst, PE.alu1_0.inVal, PE.alu1_0.rin1,  PE.alu1_0.rin2,  PE.alu1_0.iimm,  PE.alu1_0.iinst,  PE.alu1_0.iver,  PE.alu1_0.clk);  #10 reset = 1;
   #1 reset = 0;
   #1 reset = 1;
   #1 reset = 0;
   while (!halted) begin
-    #1 clk = 1;
-    #1 clk = 0;
+    #10 clk = 1;
+    #10 clk = 0;
   end
   $display("hi");
   $finish;
