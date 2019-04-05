@@ -188,123 +188,130 @@ assign i = (tiny ? 0 : (big ? 32767 : (f `FSIGN ? (-ui) : ui)));
 endmodule
 
 //Identifies which registers and accumulators are read from, if any
-module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_JumpFlag, RR_SysFlag, RR_inst);
-	output wire [3:0] Field1_ACC0;
-	output wire [3:0] Field1_REG1;
-	output wire [3:0] Field2_ACC1;
-	output wire [3:0] Field2_REG2;
-	output RR_JumpFlag;
-	output RR_SysFlag;
+module RegistersReadFrom(Field1_ACC0, Field1_REG1, Field2_ACC1, Field2_REG2, RR_JumpFlag, RR_SysFlag, RR_inst, clk);
+	output reg [3:0] Field1_ACC0;
+	output reg [3:0] Field1_REG1;
+	output reg [3:0] Field2_ACC1;
+	output reg [3:0] Field2_REG2;
+	output reg RR_JumpFlag;
+	output reg RR_SysFlag;
 	
+	input clk;
 	input `WORD RR_inst;
 	
-	if (RR_inst `OPcode1 == `OPsys) begin
-		assign RR_SysFlag = `true;
-		assign RR_JumpFlag = `false;
-	end
-	else if ((RR_inst `OPcode1 == `OPjz8) || (RR_inst `OPcode1 == `OPjnz8) || (RR_inst `OPcode1 == `OPjr) || (RR_inst `OPcode1 == `OPjp8) || (RR_inst `OPcode2 == `OPjr)) begin  
-		assign RR_JumpFlag = `true;
-		assign RR_SysFlag = `false;
-	end
-	else begin
-		assign RR_JumpFlag = `false;
-		assign RR_SysFlag = `false;
-		//if the first opcode is a register reader, assign the appropriate register to Field1_REG1
-		if ((RR_inst `OPcode1 == `OPst) || (RR_inst `OPcode1 == `OPcvt) || (RR_inst `OPcode1 == `OPr2a) || (RR_inst `OPcode1 == `OPsh) || (RR_inst `OPcode1 == `OPslt) || (RR_inst `OPcode1 == `OPadd) || (RR_inst `OPcode1 == `OPsub) || (RR_inst `OPcode1 == `OPdiv) || (RR_inst `OPcode1 == `OPmul) || (RR_inst `OPcode1 == `OPnot) || (RR_inst `OPcode1 == `OPxor) || (RR_inst `OPcode1 == `OPand) || (RR_inst `OPcode1 == `OPor)) begin
-			
-			assign Field1_REG1 = RR_inst `REG1; 
+	always @ (posedge clk) begin
+		if (RR_inst `OPcode1 == `OPsys) begin
+			RR_SysFlag <= `true;
+			RR_JumpFlag <= `false;
+		end
+		else if ((RR_inst `OPcode1 == `OPjz8) || (RR_inst `OPcode1 == `OPjnz8) || (RR_inst `OPcode1 == `OPjr) || (RR_inst `OPcode1 == `OPjp8) || (RR_inst `OPcode2 == `OPjr)) begin  
+			RR_JumpFlag <= `true;
+			RR_SysFlag <= `false;
 		end
 		else begin
-			
-			assign Field1_REG1 = 4'b1111;
-		end
-		
-		//if the first opcode is an accumulator reader, assign the appropriate accumulator to Field1_ACC0
-		if ((RR_inst `OPcode1 == `OPst) || (RR_inst `OPcode1 == `OPa2r) || (RR_inst `OPcode1 == `OPli) || (RR_inst `OPcode1 == `OPlf) || (RR_inst `OPcode1 == `OPsh) || (RR_inst `OPcode1 == `OPslt) || (RR_inst `OPcode1 == `OPxor) || (RR_inst `OPcode1 == `OPand) || (RR_inst `OPcode1 == `OPor)) begin
-		
-			assign Field1_ACC0 = 4'b0000;
-		end
-		else begin
-		
-			assign Field1_ACC0 = 4'b1111;
-		end
-		
-		//if the instruction can be a two opcode word
-		if (RR_inst `OPcode1 > `OPjr) begin	
-		
-			//if the possible second opcode is a register reader, assign the appropriate register to Field2_REG2
-			if ((RR_inst `OPcode2 == `OPst) || (RR_inst `OPcode2 == `OPcvt) || (RR_inst `OPcode2 == `OPr2a) || (RR_inst `OPcode2 == `OPsh) || (RR_inst `OPcode2 == `OPslt) || (RR_inst `OPcode2 == `OPadd) || (RR_inst `OPcode2 == `OPsub) || (RR_inst `OPcode2 == `OPdiv) || (RR_inst `OPcode2 == `OPmul) || (RR_inst `OPcode2 == `OPnot) || (RR_inst `OPcode2 == `OPxor) || (RR_inst `OPcode2 == `OPand) || (RR_inst `OPcode2 == `OPor)) begin
+			RR_JumpFlag <= `false;
+			RR_SysFlag <= `false;
+			//if the first opcode is a register reader, assign the appropriate register to Field1_REG1
+			if ((RR_inst `OPcode1 == `OPst) || (RR_inst `OPcode1 == `OPcvt) || (RR_inst `OPcode1 == `OPr2a) || (RR_inst `OPcode1 == `OPsh) || (RR_inst `OPcode1 == `OPslt) || (RR_inst `OPcode1 == `OPadd) || (RR_inst `OPcode1 == `OPsub) || (RR_inst `OPcode1 == `OPdiv) || (RR_inst `OPcode1 == `OPmul) || (RR_inst `OPcode1 == `OPnot) || (RR_inst `OPcode1 == `OPxor) || (RR_inst `OPcode1 == `OPand) || (RR_inst `OPcode1 == `OPor)) begin
 				
-				assign Field2_REG2 = RR_inst `REG2; 
-			end
-			else begin 
-				
-				assign Field2_REG2 = 4'b1111;
-			end
-			
-			//if the possible second opcode is an accumulator reader, assign the appropriate accumulator to Field2_ACC1
-			if ((RR_inst `OPcode2 == `OPst) || (RR_inst `OPcode2 == `OPa2r) || (RR_inst `OPcode2 == `OPli) || (RR_inst `OPcode2 == `OPlf) || (RR_inst `OPcode2 == `OPsh) || (RR_inst `OPcode2 == `OPslt) || (RR_inst `OPcode2 == `OPxor) || (RR_inst `OPcode2 == `OPand) || (RR_inst `OPcode2 == `OPor)) begin	
-				
-				assign Field2_ACC1 = 4'b0001;
+				Field1_REG1 <= RR_inst `REG1; 
 			end
 			else begin
 				
-				assign Field2_ACC1 = 4'b1111;
+				Field1_REG1 <= 4'b1111;
+			end
+			
+			//if the first opcode is an accumulator reader, assign the appropriate accumulator to Field1_ACC0
+			if ((RR_inst `OPcode1 == `OPst) || (RR_inst `OPcode1 == `OPa2r) || (RR_inst `OPcode1 == `OPli) || (RR_inst `OPcode1 == `OPlf) || (RR_inst `OPcode1 == `OPsh) || (RR_inst `OPcode1 == `OPslt) || (RR_inst `OPcode1 == `OPxor) || (RR_inst `OPcode1 == `OPand) || (RR_inst `OPcode1 == `OPor)) begin
+			
+				Field1_ACC0 <= 4'b0000;
+			end
+			else begin
+			
+				Field1_ACC0 <= 4'b1111;
+			end
+			
+			//if the instruction can be a two opcode word
+			if (RR_inst `OPcode1 > `OPjr) begin	
+			
+				//if the possible second opcode is a register reader, assign the appropriate register to Field2_REG2
+				if ((RR_inst `OPcode2 == `OPst) || (RR_inst `OPcode2 == `OPcvt) || (RR_inst `OPcode2 == `OPr2a) || (RR_inst `OPcode2 == `OPsh) || (RR_inst `OPcode2 == `OPslt) || (RR_inst `OPcode2 == `OPadd) || (RR_inst `OPcode2 == `OPsub) || (RR_inst `OPcode2 == `OPdiv) || (RR_inst `OPcode2 == `OPmul) || (RR_inst `OPcode2 == `OPnot) || (RR_inst `OPcode2 == `OPxor) || (RR_inst `OPcode2 == `OPand) || (RR_inst `OPcode2 == `OPor)) begin
+					
+					Field2_REG2 <= RR_inst `REG2; 
+				end
+				else begin 
+					
+					Field2_REG2 <= 4'b1111;
+				end
+				
+				//if the possible second opcode is an accumulator reader, assign the appropriate accumulator to Field2_ACC1
+				if ((RR_inst `OPcode2 == `OPst) || (RR_inst `OPcode2 == `OPa2r) || (RR_inst `OPcode2 == `OPli) || (RR_inst `OPcode2 == `OPlf) || (RR_inst `OPcode2 == `OPsh) || (RR_inst `OPcode2 == `OPslt) || (RR_inst `OPcode2 == `OPxor) || (RR_inst `OPcode2 == `OPand) || (RR_inst `OPcode2 == `OPor)) begin	
+					
+					Field2_ACC1 <= 4'b0001;
+				end
+				else begin
+					
+					Field2_ACC1 <= 4'b1111;
+				end
 			end
 		end
 	end
 endmodule
 
 //Identifies which registers and accumulators are written to, if any
-module RegistersWrittenTo(Write_ACC0, Write_REG1, Write_ACC1, Write_REG2, WR_inst);
-	output wire [3:0] Write_ACC0;
-	output wire [3:0] Write_REG1;
-	output wire [3:0] Write_ACC1;
-	output wire [3:0] Write_REG2;
+module RegistersWrittenTo(Write_ACC0, Write_REG1, Write_ACC1, Write_REG2, WR_inst, clk);
+	output reg [3:0] Write_ACC0;
+	output reg [3:0] Write_REG1;
+	output reg [3:0] Write_ACC1;
+	output reg [3:0] Write_REG2;
+	
+	input clk;
 	
 	input `WORD WR_inst;
 	
-	//if the first opcode is a register writer, assign the appropriate register to Write_REG1
-	if ((WR_inst `OPcode1 == `OPcf8) || (WR_inst `OPcode1 == `OPci8) || (WR_inst `OPcode1 == `OPa2r) || (WR_inst `OPcode1 == `OPli) || (WR_inst `OPcode1 == `OPlf)) begin
-		
-		assign Write_REG1 = WR_inst `REG1; 
-	end
-	else begin
-		
-		assign Write_REG1 = 4'b1110;
-	end
-	
-	//if the first opcode is an accumulator writer, assign the appropriate accumulator to Write_ACC0
-	if ((WR_inst `OPcode1 == `OPcvt) || (WR_inst `OPcode1 == `OPr2a) || (WR_inst `OPcode1 == `OPsh) || (WR_inst `OPcode1 == `OPslt) || (WR_inst `OPcode1 == `OPadd) || (WR_inst `OPcode1 == `OPsub) || (WR_inst `OPcode1 == `OPdiv) || (WR_inst `OPcode1 == `OPmul) || (WR_inst `OPcode1 == `OPnot) || (WR_inst `OPcode1 == `OPxor) || (WR_inst `OPcode1 == `OPand) || (WR_inst `OPcode1 == `OPor)) begin
-	
-		assign Write_ACC0 = 4'b0000;
-	end
-	else begin
-	
-		assign Write_ACC0 = 4'b1110;
-	end
-	
-	//if the instruction can be a two opcode word
-	if (WR_inst `OPcode1 > `OPjr) begin
-		
-		//if the possible second opcode is a register writer, assign the appropriate register to Write_REG2
-		if ((WR_inst `OPcode2 == `OPcf8) || (WR_inst `OPcode2 == `OPci8) || (WR_inst `OPcode2 == `OPa2r) || (WR_inst `OPcode2 == `OPli) || (WR_inst `OPcode2 == `OPlf)) begin
+	always @(posedge clk) begin
+		//if the first opcode is a register writer, assign the appropriate register to Write_REG1
+		if ((WR_inst `OPcode1 == `OPcf8) || (WR_inst `OPcode1 == `OPci8) || (WR_inst `OPcode1 == `OPa2r) || (WR_inst `OPcode1 == `OPli) || (WR_inst `OPcode1 == `OPlf)) begin
 			
-			assign Write_REG2 = WR_inst `REG2; 
-		end
-		else begin 
-			
-			assign Write_REG2 = 4'b1110;
-		end
-		
-		//if the second opcode is an accumulator writer, assign the appropriate accumulator to Write_ACC1
-		if ((WR_inst `OPcode1 == `OPcvt) || (WR_inst `OPcode1 == `OPr2a) || (WR_inst `OPcode1 == `OPsh) || (WR_inst `OPcode1 == `OPslt) || (WR_inst `OPcode1 == `OPadd) || (WR_inst `OPcode1 == `OPsub) || (WR_inst `OPcode1 == `OPdiv) || (WR_inst `OPcode1 == `OPmul) || (WR_inst `OPcode1 == `OPnot) || (WR_inst `OPcode1 == `OPxor) || (WR_inst `OPcode1 == `OPand) || (WR_inst `OPcode1 == `OPor)) begin
-	
-		assign Write_ACC1 = 4'b0001;
+			Write_REG1 <= WR_inst `REG1; 
 		end
 		else begin
-	
-		assign Write_ACC1 = 4'b1110;
+			
+			Write_REG1 <= 4'b1110;
+		end
+		
+		//if the first opcode is an accumulator writer, assign the appropriate accumulator to Write_ACC0
+		if ((WR_inst `OPcode1 == `OPcvt) || (WR_inst `OPcode1 == `OPr2a) || (WR_inst `OPcode1 == `OPsh) || (WR_inst `OPcode1 == `OPslt) || (WR_inst `OPcode1 == `OPadd) || (WR_inst `OPcode1 == `OPsub) || (WR_inst `OPcode1 == `OPdiv) || (WR_inst `OPcode1 == `OPmul) || (WR_inst `OPcode1 == `OPnot) || (WR_inst `OPcode1 == `OPxor) || (WR_inst `OPcode1 == `OPand) || (WR_inst `OPcode1 == `OPor)) begin
+		
+			Write_ACC0 <= 4'b0000;
+		end
+		else begin
+		
+			Write_ACC0 <= 4'b1110;
+		end
+		
+		//if the instruction can be a two opcode word
+		if (WR_inst `OPcode1 > `OPjr) begin
+			
+			//if the possible second opcode is a register writer, assign the appropriate register to Write_REG2
+			if ((WR_inst `OPcode2 == `OPcf8) || (WR_inst `OPcode2 == `OPci8) || (WR_inst `OPcode2 == `OPa2r) || (WR_inst `OPcode2 == `OPli) || (WR_inst `OPcode2 == `OPlf)) begin
+				
+				Write_REG2 <= WR_inst `REG2; 
+			end
+			else begin 
+				
+				Write_REG2 <= 4'b1110;
+			end
+			
+			//if the second opcode is an accumulator writer, assign the appropriate accumulator to Write_ACC1
+			if ((WR_inst `OPcode1 == `OPcvt) || (WR_inst `OPcode1 == `OPr2a) || (WR_inst `OPcode1 == `OPsh) || (WR_inst `OPcode1 == `OPslt) || (WR_inst `OPcode1 == `OPadd) || (WR_inst `OPcode1 == `OPsub) || (WR_inst `OPcode1 == `OPdiv) || (WR_inst `OPcode1 == `OPmul) || (WR_inst `OPcode1 == `OPnot) || (WR_inst `OPcode1 == `OPxor) || (WR_inst `OPcode1 == `OPand) || (WR_inst `OPcode1 == `OPor)) begin
+		
+			Write_ACC1 <= 4'b0001;
+			end
+			else begin
+		
+			Write_ACC1 <= 4'b1110;
+			end
 		end
 	end
 endmodule
@@ -369,60 +376,66 @@ module ALU0(outVal, out1, out2, oimm, oinst, rin1, rin2, iimm, iinst, iver, clk)
 	fslt fsl(sltr, in1, in2);
 	i2f icvt(cvti, in2);
 	f2i fcvt(cvtf, in2);
-	always @(posedge clk) begin
+	always @(*) begin
 		if (iver == 1'b0)
-			assign op = iinst`OPcode1;
+			op = iinst`OPcode1;
 		else
-			assign op = iinst`OPcode2;
+			op = iinst`OPcode2;
 		case(op)
 			`OPadd: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 + in2}; end
-					1: begin outVal <= {typ, addr}; end
+					0: begin outVal = {typ, in1 + in2}; end
+					1: begin outVal = {typ, addr}; end
 				endcase
 			end
 			`OPsub: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 - in2}; end
-					1: begin outVal <= {typ, subr}; end
+					0: begin outVal = {typ, in1 - in2}; end
+					1: begin outVal = {typ, subr}; end
 				endcase
 			end
 			`OPmul: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 * in2}; end
-					1: begin outVal <= {typ, mulr}; end
+					0: begin outVal = {typ, in1 * in2}; end
+					1: begin outVal = {typ, mulr}; end
 				endcase
 			end
 			`OPdiv: begin
 				case(typ)
-					0: begin outVal <= {typ, in1 / in2}; end
-					1: begin outVal <= {typ, recr}; end // Only perform the first half of the fp division here.
+					0: begin outVal = {typ, in1 / in2}; end
+					1: begin outVal = {typ, recr}; end // Only perform the first half of the fp division here.
 				endcase
 			end
-			`OPand: begin outVal <= {typ, outand}; end
-			`OPor:  begin outVal <= {typ, outor}; end
-			`OPxor: begin outVal <= {typ, outxor}; end
-			`OPnot: begin outVal <= {typ, outnot}; end
+			`OPand: begin outVal = {typ, outand}; end
+			`OPor:  begin outVal = {typ, outor}; end
+			`OPxor: begin outVal = {typ, outxor}; end
+			`OPnot: begin outVal = {typ, outnot}; end
 		//Positive indicates left shift.
 			`OPsh:  begin
 				case(typ)
-					0:  begin outVal <= {typ, in1 << in2}; end
-					1:  begin outVal <= {typ, shr}; end
+					0:  begin outVal = {typ, in1 << in2}; end
+					1:  begin outVal = {typ, shr}; end
 				endcase
 			end
 			`OPslt: begin
 				case(typ)
-					0:  begin outVal <= {typ, outslt}; end
-					1:  begin outVal <= {typ, 15'b0, sltr}; end
+					0:  begin outVal = {typ, outslt}; end
+					1:  begin outVal = {typ, 15'b0, sltr}; end
 				endcase
 			end
 			`OPcvt: begin
 				case(typ)
-					0:  begin outVal <= {!typ, cvti}; end
-					1:  begin outVal <= {!typ, cvtf}; end
+					0:  begin outVal = {!typ, cvti}; end
+					1:  begin outVal = {!typ, cvtf}; end
 				endcase
 			end
-			default: outVal <= 17'b0;
+			`OPjz8: begin
+				outVal = {0'b0, in2};
+			end
+			`OPjnz8: begin
+				outVal = {0'b0, in2};
+			end
+			default: outVal = 17'b0;
 		endcase
 	end
 endmodule
@@ -471,25 +484,25 @@ module ALU1(outVal, out1, out2, oimm, oinst, inVal, rin1, rin2, iimm, iinst, ive
 	wire signed `WORD divr;
 
 	fmul fd(divr, in1, inVal`WORD);
-	always @(posedge clk) begin
+	always @(*) begin
 		if (iver == 1'b0)
-			assign op = iinst`OPcode1;
+			op = iinst`OPcode1;
 		else
-			assign op = iinst`OPcode2;
+			op = iinst`OPcode2;
 		case(op)
 			`OPdiv: begin
 				case(typ)
-					0: begin outVal <= inVal; end
-					1: begin outVal <= {typ, divr}; end
+					0: begin outVal = inVal; end
+					1: begin outVal = {typ, divr}; end
 				endcase
 			end
 			`OPlf: begin
-				outVal[15] <= 1'b1;
+				outVal[15] = 1'b1;
 			end	
 			`OPli: begin
-				outVal[15] <= 1'b0;
+				outVal[15] = 1'b0;
 			end	
-			default: outVal <= inVal;
+			default: outVal = inVal;
 		endcase
 	end
 endmodule
@@ -546,13 +559,13 @@ wire IF_JumpFlag;
 wire IF_SysFlag;
 
 //Determines which registers are being read from in stage 0 (1111 if not read from)
-RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, IF_JumpFlag, IF_SysFlag, instruction);
+RegistersReadFrom RegsRead(R_ACC0, R_REG1, R_ACC1, R_REG2, IF_JumpFlag, IF_SysFlag, instruction, clk);
 //Determines which registers are being written to in stage 1 (1110 if not written to)
-RegistersWrittenTo RegsWritten1(W1_ACC0, W1_REG1, W1_ACC1, W1_REG2, ins_to_ALUMEM);
+RegistersWrittenTo RegsWritten1(W1_ACC0, W1_REG1, W1_ACC1, W1_REG2, ins_to_ALUMEM, clk);
 //Determines which registers are being written to in stage 2 (1110 if not written to)
-RegistersWrittenTo RegsWritten2(W2_ACC0, W2_REG1, W2_ACC1, W2_REG2, ins_to_ALU2);
+RegistersWrittenTo RegsWritten2(W2_ACC0, W2_REG1, W2_ACC1, W2_REG2, ins_to_ALU2, clk);
 //Determines which registers are being written to in stage 3 (1110 if not written to)
-RegistersWrittenTo RegsWritten3(W3_ACC0, W3_REG1, W3_ACC1, W3_REG2, ins_to_WB);
+RegistersWrittenTo RegsWritten3(W3_ACC0, W3_REG1, W3_ACC1, W3_REG2, ins_to_WB, clk);
 
 
 //Registers read from in stage 0
@@ -581,13 +594,13 @@ wire [3:0] W3_REG2;
 
 //NOPs needed to avoid dependency
 //NOPs needed to avoid dependency
-reg [1:0] NOPs_win1;
-reg [1:0] NOPs_win2;
-reg [1:0] NOPs1;
-reg [1:0] NOPs2;
-reg [1:0] NOPs3;
-reg [1:0] NOPs4;
-reg [1:0] NOPs, NOP_timer;
+reg [2:0] NOPs_win1;
+reg [2:0] NOPs_win2;
+reg [2:0] NOPs1;
+reg [2:0] NOPs2;
+reg [2:0] NOPs3;
+reg [2:0] NOPs4;
+reg [2:0] NOPs, NOP_timer;
 
 always@(posedge reset) begin
     $readmemh0(regfile);
@@ -596,6 +609,8 @@ always@(posedge reset) begin
     pc <= 0;
     pre <= 0;
     halt <= 0;
+    pre <= 0;
+	NOPs <= 0;
 end
 
 //stage 0: instruction fetch
@@ -608,11 +623,13 @@ always@(posedge clk) begin
 	
     //If a sys call, make sure everything finishes by padding with NOPs
     if (IF_SysFlag == `true) begin
-	NOPs = 200000;
+		$display("sys-nop");
+		NOPs = 6;
     end
 	//If a jump, pad NOPs until jump is gone
     else if (IF_JumpFlag == `true) begin
-	NOPs = 4;
+		$display("jump-nop");
+		NOPs = 7;
     end
     //Else, check for dependencies
     else begin 
@@ -774,6 +791,8 @@ always@(posedge clk) begin
     imm_to_WB <= alu1_0oimm;
     data1_to_WB <= alu1_0outVal;
     data2_to_WB <= alu1_1outVal;
+	ALU1_result <= alu1_0outVal;
+	ALU2_result <= alu1_1outVal;
 end
 
 //stage 4: writeback
@@ -784,6 +803,10 @@ always@(posedge clk) begin
     //reg1_load <= ins_to_WB `REG1
     //reg2_load <= ins_to_WB `REG2
     
+    if(ins_to_WB `OPcode1 == `OPsys) begin
+        halt = 1'b1;
+    end
+
     //First instruction logic WB
     if(ins_to_WB `OPcode1 >= `OPsh || ins_to_WB `OPcode1 == `OPr2a) begin
         regfile `Acc0 <= ALU1_result;
@@ -847,13 +870,19 @@ tacky_processor PE(halted, reset, clk);
 
 initial begin
   $dumpfile;
-  $dumpvars(1, PE);
+  $dumpvars(1, PE.halt, PE.NOPs, PE.pre, PE.pc, PE.pc_next, PE.jump_flag, PE.instruction, PE.ins_to_ALUMEM, PE.ins_to_ALU2, PE.ins_to_WB, PE.imm_to_ALUMEM, PE.alu0_0outVal, PE.alu1_0outVal, PE.ALU1_result);
+  $dumpvars(2, PE.alu0_0.op, PE.alu0_0.outVal);
+  //$dumpvars(1, PE.halt, PE.NOPs);
+  //$dumpvars(2, PE.RegsRead.RR_inst, PE.RegsRead.RR_JumpFlag, PE.RegsRead.RR_SysFlag);
+  //$dumpvars(2, PE.alu0_0.outVal, PE.alu0_0.out1, PE.alu0_0.out2, PE.alu0_0.oimm, PE.alu0_0.oinst, PE.alu0_0.rin1,  PE.alu0_0.rin2,  PE.alu0_0.iimm,  PE.alu0_0.iinst,  PE.alu0_0.iver,  PE.alu0_0.clk); 
+  //$dumpvars(2, PE.alu1_0.outVal, PE.alu1_0.out1, PE.alu1_0.out2, PE.alu1_0.oimm, PE.alu1_0.oinst, PE.alu1_0.inVal, PE.alu1_0.rin1,  PE.alu1_0.rin2,  PE.alu1_0.iimm,  PE.alu1_0.iinst,  PE.alu1_0.iver,  PE.alu1_0.clk);  #10 reset = 1;
   #10 reset = 1;
   #10 reset = 0;
   while (!halted) begin
-    #1 clk = 1;
-    #1 clk = 0;
+    #10 clk = 1;
+    #10 clk = 0;
   end
+  $display("hi");
   $finish;
 end
 
