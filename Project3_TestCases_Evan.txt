@@ -1,5 +1,5 @@
 ;TACKY Testing Code:
-;cf8, cvt, jr, lf, pre, and sys will not be tested
+;cf8, cvt, jr, lf, will not be tested
 
 ;Tests ci8, jnz8, jz8, a2r, r2a, li, st
 Test0:		ci8 $r0, 0xFF

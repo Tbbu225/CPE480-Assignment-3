@@ -607,15 +607,18 @@ always@(posedge reset) begin
     $readmemh1(instruction_mem);
     $readmemh2(data_mem);
     pc <= 0;
+    pc_inc <= 1;
     pre <= 0;
     halt <= 0;
     pre <= 0;
 	NOPs <= 0;
+	NOP_timer <= 0;
+	jump_flag <= 0;
 end
 
 //stage 0: instruction fetch
 always@(posedge clk) begin
-    if(NOP_timer == 0) begin
+    if(NOP_timer == 0  && !IF_SysFlag) begin
         pc <= (jump_flag) ? pc_next : pc_inc;
     end
     instruction <= instruction_mem[pc];
@@ -707,8 +710,9 @@ always@(posedge clk) begin
 end
 
 //stage 1: register read
+
 always@(posedge clk) begin
-    NOP_timer <= (NOPs > 0) ? NOPs : 2'b0;
+    NOP_timer <= (NOPs > 0 && NOP_timer == 0) ? NOPs : NOP_timer;
     if(NOP_timer > 0) begin
         ins_to_ALUMEM <= {`OPno, 3'b000, `OPno, 3'b001 };
         NOP_timer <= NOP_timer - 1; 
@@ -870,19 +874,15 @@ tacky_processor PE(halted, reset, clk);
 
 initial begin
   $dumpfile;
-  $dumpvars(1, PE.halt, PE.NOPs, PE.pre, PE.pc, PE.pc_next, PE.jump_flag, PE.instruction, PE.ins_to_ALUMEM, PE.ins_to_ALU2, PE.ins_to_WB, PE.imm_to_ALUMEM, PE.alu0_0outVal, PE.alu1_0outVal, PE.ALU1_result);
+  $dumpvars(1, PE.halt, PE.NOPs, PE.NOP_timer, PE.pre, PE.pc, PE.pc_next, PE.pc_inc, PE.jump_flag, PE.instruction, PE.ins_to_ALUMEM, PE.ins_to_ALU2, PE.ins_to_WB, PE.imm_to_ALUMEM, PE.alu0_0outVal, PE.alu1_0outVal, PE.ALU1_result, PE.IF_JumpFlag, PE.IF_SysFlag, clk);
   $dumpvars(2, PE.alu0_0.op, PE.alu0_0.outVal);
-  //$dumpvars(1, PE.halt, PE.NOPs);
-  //$dumpvars(2, PE.RegsRead.RR_inst, PE.RegsRead.RR_JumpFlag, PE.RegsRead.RR_SysFlag);
-  //$dumpvars(2, PE.alu0_0.outVal, PE.alu0_0.out1, PE.alu0_0.out2, PE.alu0_0.oimm, PE.alu0_0.oinst, PE.alu0_0.rin1,  PE.alu0_0.rin2,  PE.alu0_0.iimm,  PE.alu0_0.iinst,  PE.alu0_0.iver,  PE.alu0_0.clk); 
-  //$dumpvars(2, PE.alu1_0.outVal, PE.alu1_0.out1, PE.alu1_0.out2, PE.alu1_0.oimm, PE.alu1_0.oinst, PE.alu1_0.inVal, PE.alu1_0.rin1,  PE.alu1_0.rin2,  PE.alu1_0.iimm,  PE.alu1_0.iinst,  PE.alu1_0.iver,  PE.alu1_0.clk);  #10 reset = 1;
   #10 reset = 1;
   #10 reset = 0;
   while (!halted) begin
     #10 clk = 1;
     #10 clk = 0;
   end
-  $display("hi");
+  $display("finished");
   $finish;
 end
 
