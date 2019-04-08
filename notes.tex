@@ -128,10 +128,10 @@ In our Instruction Fetch stage, we fetch the instruction from memory, decide whe
 In our Register Read stage, we check the instructions being used in the operations we need to perform and fetch the values of the appropriate registers. In addition, we also perform the pre operation.
 
 \subsection{Stage 2: ALU / Data Memory}
-In our ALU/MEM stage, we begin performing the memory and arithmetic instructions we’ve been provided using the register values we received from the Register Read stage. Most instructions will finish in this stage, with the exceptions of load float, load int, and floating-point divide. Load float and load int will read the 16-bit value from memory. Floating point divide will read from the reciprocal lookup table.
+In our ALU/MEM stage, we have two ALUs. There are two goals for these ALUs: to perform arithmetic operations on the register values and to load from and store to memory. Each receive the instruction word, and the values of the registers it would be concerned about. If the instruction word had an immediate, it was fed to the first ALU and the second ALU does nothing. Most instructions will finish in this stage, with the exceptions of load float, load int, and floating-point divide. Load float and load int will read the 16-bit value from memory. Floating point divide will read from the reciprocal lookup table. All inputs to this stage are transferred to the next stage. An intermediate "out value" is also transferred to the next stage.
 
 \subsection{Stage 3: ALU2}
-In our ALU 2 stage, we finish up the operations that we didn’t finish in the previous stage. For load float, we prepend a 1 to the value we read to signify that it is a float. For load int, we prepend a 0 instead. For floating point divide, we multiply the value from the lookup table by the accumulator.
+In our ALU 2 stage, we finish up the operations that we didn’t finish in the previous stage. Again, there are two ALUs, and we receive the same things as input as the first stage of ALUs. In addition, we receive the intermediate value. This intermediate value is going to be the output for most instructions. For load float, we prepend a 1 to the value we read to signify that it is a float. For load int, we prepend a 0 instead. For floating point divide, we multiply the value from the lookup table by the accumulator. Again, we pass the instruction word, the register values, and the alu generated values to the next stage.
 
 \subsection{Stage 1: Write Back}
 In our Writeback stage, we modify our pc (change if jump, don’t change if stalling, increment if otherwise). We write any registers that were modified to our register file.
@@ -150,9 +150,9 @@ To check whether we need to stall, we first look at the instruction we are about
 %\end{figure}
 
 \section{Testing}
-No testing was done because there was nothing to test.
+Our test cases are included in a separate file. Test cases were written to cover all memory, jump, and integer arithmetic instructions. 
 
 \section{Issues}
-There were no issues because there was nothing to have an issue with.
+During testing, our processor could properly read and parse instructions until we reached a jump instruction followed by a sys instruction. We supplied the first stage with a jump flag and the pc to jump to, but because it was followed by a sys, our processor parsed the sys instead of jumping.
 
 \end{document}
