@@ -73,7 +73,7 @@
 %
 % The abstract is a short summary of the work to be presented in the article.
 \begin{abstract}
-This project is TACKY, a twin accumulator processor that interprets 16 bit instruction words with up to 2 instructions per instruction word. TACKY is pipelined into 5 stages, so it can process up to two instructions per clock cycle. For the sake of simplicity, this hardware handles dependencies
+This project is TACKY, a twin accumulator processor that interprets 16 bit instruction words with up to 2 instructions per instruction word. TACKY is pipelined into 5 stages, so it can process up to two instructions per clock cycle. For the sake of simplicity, this hardware handles dependencies.
 \end{abstract}
 
 %
@@ -122,7 +122,7 @@ TACKY will also be able to process both integer and floating point 16-bit instru
 To process our instructions, we implemented a five-stage pipeline. The stages are as follows: Instruction Fetch, Register Read, ALU/MEM, ALU 2, Register Writeback. In between each stage, we have a register that takes the output of one stage and temporarily stores it for the next stage. 
 
 \subsection{Stage 0: Instruction Fetch}
-In our Instruction Fetch stage, we fetch the instruction from memory, decide whether we need to stall our pipeline, and detect and initiate the halting procedure.
+In our Instruction Fetch stage, we fetch the instruction from memory, decide whether we need to stall our pipeline, and detect and initiate the halting procedure. The registers and accumulators that the fetched instruction reads from are compared to the registers and accumulators that are written to in the following three stages. If a common register is being read from and written to across stages, it is considererd a dependency. Four case statements in the Instruction Fetch stage check for any matches between registers written to in the other stages and the register being read from in the Instruction Fetch stage. Once matches are found, their stage locations are compared. Stages that are farther away from the Register Writeback stage require more NOPs to be padded. Therefore, the number of NOPs to pad is the number related to whichever dependency is farthest from the Writeback Register. This remains true for instances in which multiple dependencies happen across stages. More information on how dependencies are handled are included in a following section.
 
 \subsection{Stage 1: Register Read}
 In our Register Read stage, we check the instructions being used in the operations we need to perform and fetch the values of the appropriate registers. In addition, we also perform the pre operation.
@@ -139,7 +139,7 @@ In our Writeback stage, we modify our pc (change if jump, don’t change if stal
 \subsection{Dependencies and Jump Handling}
 Because our processor is pipelined, the effects of a previous instruction may not have taken effect when we begin processing the next one. For example, if two sequential instructions both read and modify the same register, the second instruction would read the old register value before the first instruction would update it. To solve this issue, we need to stall stages of our pipeline.
 
-To check whether we need to stall, we first look at the instruction we are about to process, and we determine which registers are being read for this type of instruction. Then, we look at the instructions being processed at the next three stages in order. If those instructions are modifying a register that we need to read, we'll need to stall. To stall, we output nops for the next X clock cycles and freeze the pc. X is dependent on how which stage we caught the dependency. 3 for Reg Read stage, 2 for ALU/MEM stage, and 1 for Writeback stage. Because we freeze the pc for this time, we will execute the correct instruction after getting through the nops. In addition to register dependencies, we also stall if we detect a jump instruction. For jumps, we stall until the instruction gets to the Writeback stage, so that if we need to jump, it will modify the pc. 
+To check whether we need to stall, we first look at the instruction we are about to process, and we determine which registers are being read for this type of instruction. Then, we look at the instructions being processed at the next three stages in order. If those instructions are modifying a register that we need to read, we'll need to stall. To stall, we output nops for the next X clock cycles and freeze the pc. X is dependent on which stage we caught the dependency. 3 for Reg Read stage, 2 for ALU/MEM stage, and 1 for Writeback stage. If multiple dependencies occur across stages, the largest number of NOPs is used. Because we freeze the pc for this time, we will execute the correct instruction after getting through the nops. In addition to register dependencies, we also stall if we detect a jump instruction. For jumps, we stall until the instruction gets to the Writeback stage, so that if we need to jump, it will modify the pc. 
 
 %How to include a picture in this format
 %\begin{figure}[h]
