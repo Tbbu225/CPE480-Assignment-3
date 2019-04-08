@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=pdflatex 2019.1.28)  7 APR 2019 11:40
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=pdflatex 2019.1.28)  8 APR 2019 12:56
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1085,33 +1085,39 @@ Class acmart Warning: \vspace should only be used to provide space above/below
 surrounding objects on input line 114.
 
 
-Overfull \hbox (5.36394pt too wide) in paragraph at lines 122--123
+Overfull \hbox (5.36394pt too wide) in paragraph at lines 130--131
 \T1/LinuxLibertineT-TLF/m/n/9 (-20) The stages are as fol-lows: In-struc-tion F
 etch, Reg-is-ter Read, ALU/MEM,
  []
 
-[1.1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [1.1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 ]
+Overfull \vbox (2.04726pt too high) has occurred while \output is active []
+
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 158.
- [2.2]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 158.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 158.
+(Font)              scaled to size 9.0pt on input line 166.
+
+[2.2]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 166.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 166.
  (./notes.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 158.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 158.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 166.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 166.
 Package rerunfilecheck Info: File `notes.out' has not changed.
 (rerunfilecheck)             Checksum: B8ED42321EEBA1DB8F169078D29B1B01;1618.
  ) 
 Here is how much of TeX's memory you used:
- 17833 strings out of 493013
- 267771 string characters out of 6135682
+ 17854 strings out of 493013
+ 268290 string characters out of 6135682
  385521 words of memory out of 5000000
  20739 multiletter control sequences out of 15000+600000
- 118882 words of font info for 180 fonts, out of 8000000 for 9000
+ 120779 words of font info for 194 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
- 60i,11n,94p,879b,428s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 60i,11n,94p,1031b,428s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc}{/us
 r/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_7grukw.enc}{/usr/shar
 e/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_naooyc.enc}{/usr/share/texl
@@ -1122,7 +1128,7 @@ st/fonts/type1/public/libertine/LinBiolinumT.pfb></usr/share/texlive/texmf-dist
 fonts/type1/public/libertine/LinLibertineT.pfb></usr/share/texlive/texmf-dist/f
 onts/type1/public/libertine/LinLibertineTB.pfb></usr/share/texlive/texmf-dist/f
 onts/type1/public/libertine/LinLibertineTI.pfb>
-Output written on notes.pdf (2 pages, 326450 bytes).
+Output written on notes.pdf (2 pages, 329280 bytes).
 PDF statistics:
  103 PDF objects out of 1000 (max. 8388607)
  84 compressed objects within 1 object stream
